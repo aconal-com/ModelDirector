@@ -4,20 +4,59 @@ A `Config` is a single YAML file (or programmatic dict) that fully describes:
   * which LLM to use as the selector
   * which decision policy to apply
   * which candidate models to score against
+
+ModelDirector is model-agnostic. It does not know the meaning of model names
+or "tiers" like cheap/mid/premium. The user defines the candidate set and the
+per-model capabilities, strengths, and cost.
 """
 
 from __future__ import annotations
 
 import os
 import re
-from typing import Literal
+from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator
 
-# Fields that get a default cost if the user did not specify one.
-# Costs are arbitrary units - the user defines the scale.  The benchmark
-# only uses the *relative* values to compute savings.
-_DEFAULT_COST_BY_PRIORITY = {1: 1, 2: 5, 3: 20}
+
+# --- Cost ---------------------------------------------------------------------
+
+
+class Cost(BaseModel):
+    """Per-1M-token cost in USD. First-class in the engine, not an afterthought.
+
+    `input`  - USD per 1M input tokens.
+    `output` - USD per 1M output tokens.
+
+    Used by:
+      * `best_value` policy     - score / input cost ratio (input is deterministic)
+      * `SelectionResult.estimated_cost_usd` - per-model estimate shown to callers
+    """
+
+    input: float = Field(..., ge=0, description="USD per 1M input tokens")
+    output: float = Field(..., ge=0, description="USD per 1M output tokens")
+
+
+# Backward-compat: accept a bare number (legacy single-cost form) and coerce
+# to `Cost(input=x, output=x)`. Documented as deprecated; new configs should
+# use the `cost: {input, output}` form.
+_LegacyCost = Annotated[float, Field(ge=0)]
+
+
+def _coerce_cost(v: Any) -> Cost:
+    """Accept either a Cost-shaped dict or a single float (legacy)."""
+    if isinstance(v, Cost):
+        return v
+    if isinstance(v, (int, float)):
+        return Cost(input=float(v), output=float(v))
+    if isinstance(v, dict):
+        return Cost.model_validate(v)
+    raise ValueError(
+        f"cost must be a number (USD/1M tokens) or {{input, output}} dict, got {type(v).__name__}"
+    )
+
+
+# --- Capabilities / strengths --------------------------------------------------
 
 
 class Capabilities(BaseModel):
@@ -29,8 +68,16 @@ class Capabilities(BaseModel):
     creativity: int | None = Field(None, ge=0, le=100)
 
 
+# --- Model profile ------------------------------------------------------------
+
+
 class ModelProfile(BaseModel):
-    """A single candidate model the selector can choose from."""
+    """A single candidate model the selector can choose from.
+
+    ModelDirector knows nothing about model names or tiers. Every field here
+    is user-defined; the engine treats all candidates uniformly and lets the
+    configured policy pick.
+    """
 
     id: str = Field(..., min_length=1, description="Stable identifier used in output")
     name: str = Field(..., min_length=1, description="Provider-specific model name passed to LiteLLM")
@@ -43,14 +90,18 @@ class ModelProfile(BaseModel):
         ),
     )
     capabilities: Capabilities
-    priority: int = Field(1, ge=1, description="Lower = cheaper / preferred. Used to break ties and as a default cost.")
-    cost: float | None = Field(
-        None,
-        ge=0,
+    strengths: list[str] = Field(
+        default_factory=list,
         description=(
-            "Relative cost unit. Optional; if omitted, ModelDirector derives a "
-            "sensible default from the model's priority."
+            "Task-type tags the model is good at (e.g. ['coding', 'architecture', "
+            "'long_context']). Surfaced to the selector as structured signals. "
+            "Recommended over relying on the selector to know the model name."
         ),
+    )
+    priority: int = Field(1, ge=1, description="Lower = preferred. Tie-breaker for `cheapest_capable`.")
+    cost: Cost = Field(
+        ...,
+        description="Per-1M-token cost in USD. Can be a {input, output} dict or a single number.",
     )
 
     @field_validator("id", "name")
@@ -60,12 +111,13 @@ class ModelProfile(BaseModel):
             raise ValueError("must not be empty or whitespace")
         return v
 
-    @model_validator(mode="after")
-    def _apply_default_cost(self) -> "ModelProfile":
-        if self.cost is None:
-            # Use the priority bucket, then escalate if priority is out of the table.
-            self.cost = float(_DEFAULT_COST_BY_PRIORITY.get(self.priority, self.priority * 10))
-        return self
+    @field_validator("cost", mode="before")
+    @classmethod
+    def _coerce_cost_field(cls, v: Any) -> Any:
+        return _coerce_cost(v)
+
+
+# --- Selector -----------------------------------------------------------------
 
 
 class SelectorConfig(BaseModel):
@@ -100,16 +152,20 @@ class SelectorConfig(BaseModel):
         return val
 
 
+# --- Policy -------------------------------------------------------------------
+
+
 class PolicyConfig(BaseModel):
     """Decision policy applied after scoring."""
 
-    type: Literal["cheapest_capable", "highest_confidence", "balanced"] = "cheapest_capable"
+    type: Literal["cheapest_capable", "highest_confidence", "best_value"] = "cheapest_capable"
     threshold: int = Field(85, ge=0, le=100, description="Confidence threshold for 'cheapest_capable'")
     cost_per_million: bool = Field(
         True,
         description=(
-            "If true, costs are interpreted as USD per 1M tokens for the 'balanced' "
-            "policy report. Does not affect the decision - just the metric."
+            "If true, costs are interpreted as USD per 1M tokens. Affects the "
+            "`best_value` policy and the `estimated_cost_usd` output only - "
+            "not the decision in `cheapest_capable` or `highest_confidence`."
         ),
     )
 
@@ -117,16 +173,21 @@ class PolicyConfig(BaseModel):
     @classmethod
     def _coerce_legacy(cls, v: object) -> object:
         # accept `cheapest_capable`, `cheapest-capable`, `Cheapest Capable` etc.
+        # also accept `balanced` as a legacy alias for `best_value`.
         if isinstance(v, str):
-            return v.strip().lower().replace("-", "_").replace(" ", "_")
+            v_norm = v.strip().lower().replace("-", "_").replace(" ", "_")
+            if v_norm == "balanced":
+                return "best_value"
+            return v_norm
         return v
 
     @classmethod
     def default(cls) -> "PolicyConfig":
         """Return a default policy config (helper for Pydantic field defaults)."""
-        # pyright thinks cls(...) requires threshold + cost_per_million, but they
-        # have defaults in the class body. Suppress the false positive.
         return cls(type="cheapest_capable")  # type: ignore[call-arg]
+
+
+# --- Top-level config ---------------------------------------------------------
 
 
 class Config(BaseModel):

@@ -4,28 +4,63 @@
 
 **Open-source, stateless AI model selection engine.**
 
-Instead of hardcoding a model choice, ModelDirector scores a user prompt
-against a configurable set of candidate models and returns the **cheapest
-capable** pick, with a full reasoning trace.
+> **Select the cheapest model that can successfully complete the task.**
 
-> "Which model should handle this request?"
+ModelDirector doesn't execute prompts and isn't a gateway. It scores a
+user prompt against a configurable set of candidate models and returns the
+**best pick** — with full reasoning, a per-model cost estimate, and an
+auditable decision trace.
 
-ModelDirector doesn't execute prompts and isn't a gateway. It just
-**decides**, and the decision is auditable, deterministic, and explainable.
-
-```bash
+```
 $ echo "Translate 'hello' to Spanish." | modeldirector select -c config.yaml
 {
-  "selected_model": "cheap",
+  "selected_model": "gpt5mini",
   "policy": "cheapest_capable",
   "scores": {
-    "cheap":    { "overall": 92, "reasoning": 80, "coding": 85, "context": 90, ... },
-    "mid":      { "overall": 95, "reasoning": 90, "coding": 92, "context": 95, ... },
-    "premium":  { "overall": 99, "reasoning": 99, "coding": 97, "context": 99, ... }
+    "gpt5mini": { "overall": 92, "reasoning": 80, "coding": 85, "context": 90, "explanation": "..." },
+    "sonnet":   { "overall": 95, "reasoning": 90, "coding": 92, "context": 95, "explanation": "..." },
+    "opus":     { "overall": 99, "reasoning": 99, "coding": 97, "context": 99, "explanation": "..." }
   },
-  "reason": "'cheap' is the first model exceeding the threshold of 80 (overall=92, priority=1, cost=1)."
+  "estimated_cost_usd": {
+    "gpt5mini": 0.0001,
+    "sonnet":   0.0020,
+    "opus":     0.0100
+  },
+  "input_tokens": 7,
+  "reason": "'gpt5mini' is the first model exceeding the threshold of 80 (overall=92, priority=1, cost=$0.15/1M in, $0.60/1M out)."
 }
 ```
+
+---
+
+## The product: a model selection engine
+
+ModelDirector is **a model selection engine**. Not a router. Not a gateway.
+Not a model. It does one thing:
+
+1. You define your candidate models (id, real cost, capabilities, strengths, description).
+2. ModelDirector scores a prompt against every candidate.
+3. Your configured policy picks the winner.
+4. The decision, scores, and per-model USD cost estimate are returned.
+
+The engine is **100% independent** of how your agent actually calls the
+LLM. It works with anything that talks LiteLLM — OpenAI, Anthropic,
+OpenRouter, Ollama, vLLM, Bedrock, Azure. The same engine powers every
+adapter:
+
+```
+                          ModelDirector Engine
+                  ┌────────────────────────────────────┐
+                  │  Config loader  ·  Selector        │
+                  │  Policy engine  ·  Cost estimator  │
+                  └────────────────────────────────────┘
+                                    │
+        ┌──────────────┬────────────┼────────────┬──────────────┐
+        │              │            │            │              │
+   Python SDK         CLI         REST         MCP      Your adapter
+```
+
+Pick the surface that fits. Same engine, same policies, same result.
 
 ---
 
@@ -38,8 +73,10 @@ Most agents ship with a single hardcoded model. Two problems:
 
 ModelDirector sits *before* the model call. The same `director.select(prompt)`
 call works for OpenAI, Anthropic, local Ollama, or a self-hosted mix.
-The selection is auditable (`reason`), deterministic (configurable seed), and
-explainable (full per-model scores).
+The selection is auditable (`reason`), deterministic (configurable seed),
+explainable (full per-model scores), and **transparent** — every output
+includes a per-model USD cost estimate so the trade-off is visible to the
+caller.
 
 ---
 
@@ -84,30 +121,55 @@ uv sync --all-extras
       threshold: 80
 
     models:
-      - id: cheap
+      - id: gpt5mini                 # model id = model name, no tier labels
         name: openai/gpt-4o-mini
+        display_name: GPT-4o mini
         description: |
-          OpenAI's small, fast, low-cost model for simple tasks.
+          OpenAI's small, fast, low-cost model. Good for classification,
+          routing, short summarisation, and basic Q&A. Weaker at long-
+          horizon reasoning and complex code generation.
+        strengths:                    # structured tags the selector can rely on
+          - classification
+          - short_summarisation
+          - simple_qa
         capabilities: { reasoning: 65, coding: 70, context: 70 }
         priority: 1
-        cost: 1
+        cost:                          # USD per 1M tokens (input / output)
+          input: 0.15
+          output: 0.60
 
-      - id: mid
+      - id: sonnet
         name: anthropic/claude-3.5-sonnet
+        display_name: Claude 3.5 Sonnet
         description: |
-          Anthropic's mid-tier model. Strong at coding and reasoning.
+          Anthropic's mid-tier model. Strong at coding, architecture,
+          and long-context reasoning. 200k context window.
+        strengths:
+          - coding
+          - architecture
+          - refactoring
+          - long_context
         capabilities: { reasoning: 88, coding: 92, context: 95 }
         priority: 2
-        cost: 20
+        cost:
+          input: 3.00
+          output: 15.00
 
-      - id: premium
-        name: anthropic/claude-sonnet-4
+      - id: opus
+        name: anthropic/claude-opus-4
+        display_name: Claude Opus 4
         description: |
-          Anthropic's frontier model. Use only when cheaper models
-          are unlikely to succeed.
+          Anthropic's frontier model. Best reasoning, complex multi-step
+          planning, nuanced code generation.
+        strengths:
+          - hard_reasoning
+          - complex_coding
+          - architecture_design
         capabilities: { reasoning: 95, coding: 95, context: 99 }
         priority: 3
-        cost: 100
+        cost:
+          input: 15.00
+          output: 75.00
     ```
 
 2. **Select a model for any prompt:**
@@ -131,6 +193,7 @@ uv sync --all-extras
     director = ModelDirector(load_config("config.yaml"))
     result = director.select("Explain quantum entanglement in one paragraph.")
     print(result.selected_model, "-", result.reason)
+    print("  cost:", result.estimated_cost_usd[result.selected_model], "USD")
     ```
 
 4. **Or call the REST API:**
@@ -165,27 +228,32 @@ your prompt
 │     axis: reasoning, coding, │
 │     context, creativity)     │
 │                              │
-│  2. Policy engine picks      │
+│  2. Engine estimates the     │
+│     USD cost of each pick    │
+│     for the actual prompt.   │
+│                              │
+│  3. Policy engine picks      │
 │     the winner using a       │
 │     deterministic rule.      │
 └──────────────────────────────┘
      │
      ▼
-{ selected_model, scores, reason }
+{ selected_model, scores, estimated_cost_usd, reason }
 ```
 
 The selector is a small, fast LLM (e.g. `claude-3.5-haiku`, `gpt-4o-mini`,
 `qwen3-32b`) that gets a structured JSON prompt with your task, every
-candidate's profile, and a strict scoring rubric. It returns scores only —
+candidate's profile (description, capabilities, **strengths**, and **real
+cost per 1M tokens**), and a strict scoring rubric. It returns scores only —
 the decision logic is yours.
 
 **Three built-in policies:**
 
-| Policy              | Picks                                                        |
-| ------------------- | ------------------------------------------------------------ |
-| `cheapest_capable`  | First model (by priority, then cost) whose `overall >= threshold` |
-| `highest_confidence`| The model with the highest overall score                    |
-| `balanced`          | Best `overall / cost` ratio                                  |
+| Policy                | Picks                                                       |
+| --------------------- | ----------------------------------------------------------- |
+| `cheapest_capable`    | First model (by priority, then by input cost) whose `overall >= threshold` |
+| `highest_confidence`  | The model with the highest overall score                    |
+| `best_value`          | Best `overall / cost.input` ratio (confidence per dollar)  |
 
 Custom policies subclass `Policy` and override `apply(scores, models)`.
 
@@ -208,7 +276,7 @@ Custom policies subclass `Policy` and override `apply(scores, models)`.
 
 | Field      | Type    | Default              | Notes |
 | ---------- | ------- | -------------------- | ----- |
-| `type`     | enum    | `cheapest_capable`   | One of `cheapest_capable`, `highest_confidence`, `balanced` |
+| `type`     | enum    | `cheapest_capable`   | One of `cheapest_capable`, `highest_confidence`, `best_value` |
 | `threshold`| int     | `85`                 | Confidence threshold for `cheapest_capable` |
 | `cost_per_million` | bool | `true`         | Hint that costs are USD per 1M tokens (affects reports only) |
 
@@ -216,41 +284,42 @@ Custom policies subclass `Policy` and override `apply(scores, models)`.
 
 | Field          | Required | Default     | Notes |
 | -------------- | -------- | ----------- | ----- |
-| `id`           | yes      | —           | Stable identifier used in output. Must be unique. |
+| `id`           | yes      | —           | Stable identifier used in output. **Use model names** (e.g. `gpt5mini`, `sonnet`) — not tier labels like `cheap`/`premium`. The engine doesn't know what tiers mean. |
 | `name`         | yes      | —           | LiteLLM-format model name (the actual call) |
 | `display_name` | no       | `name`      | Human-friendly label |
 | `description`  | no       | `""`        | **Strongly recommended.** Free-form context for the selector — small LLMs may not recognise model names. |
+| `strengths`    | no       | `[]`        | **Strongly recommended.** Structured task-type tags (e.g. `coding`, `architecture`, `long_context`). More reliable for small selectors than relying on the model name. |
 | `capabilities` | yes      | —           | `reasoning`, `coding`, `context` required, `creativity` optional (0-100) |
-| `priority`     | no       | `1`         | Lower = preferred. Used to break ties and as the default cost bucket. |
-| `cost`         | no       | from `priority` | Relative cost unit (e.g. USD per 1M tokens). Used by the `balanced` policy and the savings report. |
+| `priority`     | no       | `1`         | Lower = preferred. Tie-breaker for `cheapest_capable`. |
+| `cost`         | yes      | —           | Per-1M-token cost in USD. `cost: {input: 0.15, output: 0.60}` for new configs. A bare number is accepted for back-compat and treated as `input=output=x`. |
 
 ---
 
 ## Interfaces
 
-| Interface | Use it for | Entry point |
-| --------- | ---------- | ----------- |
-| **Python SDK** | Embedding in an app | `from modeldirector import ModelDirector` |
-| **CLI** | Shell scripts, cron jobs | `modeldirector select -c config.yaml -p "..."` |
-| **REST** | Microservices, polyglot stacks | `uvicorn modeldirector.adapters.rest:app` |
-| **MCP** | Claude Desktop, Continue, Roo Code | `modeldirector-mcp config.yaml` |
+| Interface      | Use it for                                          | Entry point |
+| -------------- | --------------------------------------------------- | ----------- |
+| **Python SDK** | Embedding in an app                                 | `from modeldirector import ModelDirector` |
+| **CLI**        | Shell scripts, cron jobs                            | `modeldirector select -c config.yaml -p "..."` |
+| **REST**       | Microservices, polyglot stacks                      | `uvicorn modeldirector.adapters.rest:app` |
+| **MCP**        | Claude Desktop, Continue, Roo Code                  | `modeldirector-mcp config.yaml` |
 
-The same engine powers all four.
+The same engine powers all four. Adapters are thin translation layers.
 
 ---
 
 ## Tests
 
 ```
-$ pytest tests/ -q
-40 passed in 12.67s
+$ pytest tests/ -q -m "not integration"
+47 passed in 0.06s
 ```
 
 Includes:
 
-- **37 unit tests** for the policy engine, config loader, and selector (no
-  network) — `pytest tests/`
-- **3 integration tests** that hit OpenRouter with a real selector LLM —
+- **43 unit tests** for the policy engine, config loader, cost estimator,
+  and selector (no network) — `pytest tests/`
+- **4 integration tests** that hit OpenRouter with a real selector LLM —
   `pytest tests/test_integration.py` (skipped automatically if
   `OPENROUTER_API_KEY` isn't set)
 
@@ -266,7 +335,8 @@ generation, architecture design, prose) through the full ModelDirector
 pipeline and reports:
 
 - which model was selected per task
-- per-category cost savings vs an "always-premium" baseline
+- per-task USD cost
+- per-category cost savings vs an "always-opus" baseline
 - selector latency (p50 / p95 / max)
 
 Run it:
@@ -281,50 +351,59 @@ and re-rendered below.
 ### Latest run
 
 > Captured 2026-06-07 with `selector: anthropic/claude-3.5-haiku` and a
-> 3-tier candidate set (`cheap = gpt-4o-mini`, `mid = claude-3.5-sonnet`,
-> `premium = claude-sonnet-4`). 30 tasks, 7 categories.
+> 3-model candidate set (`gpt5mini = gpt-4o-mini`,
+> `sonnet = claude-3.5-sonnet`, `opus = claude-opus-4`) with real
+> per-1M-token USD costs. 30 tasks, 8 categories.
 
 **Headline numbers**
 
-| Metric | Value |
-| ------ | ----- |
-| Tasks completed | **30 / 30** |
-| Errors | **0** |
-| **Mean cost savings vs always-premium** | **87.6 %** |
-| Tasks that picked `cheap` | 12 / 30 |
-| Tasks that picked `mid` | 18 / 30 |
-| Tasks that picked `premium` | 0 / 30 |
-| Selector p50 latency | 4.0 s |
-| Selector p95 latency | 5.3 s |
-| Selector max latency | 7.0 s |
+| Metric                                  | Value        |
+| --------------------------------------- | ------------ |
+| Tasks completed                         | **30 / 30**  |
+| Errors                                  | **0**        |
+| **Mean cost savings vs always-opus**    | **100.0 %**  |
+| Tasks that picked `gpt5mini`            | 11 / 30      |
+| Tasks that picked `sonnet`              | 19 / 30      |
+| Tasks that picked `opus`                | 0 / 30       |
+| Selector p50 latency                    | 3.9 s        |
+| Selector p95 latency                    | 4.5 s        |
+| Selector max latency                    | 5.1 s        |
 
-**Per-category savings**
+**Per-task model picks**
 
-| Category       | n | Mean savings | Picked |
-| -------------- | - | ------------ | ------ |
-| trivial        | 5 | **95.2 %**   | 4× cheap, 1× mid |
-| simple_qa      | 5 | **99.0 %**   | 5× cheap |
-| summarisation  | 3 | 86.3 %       | 1× cheap, 2× mid |
-| light_coding   | 4 | 84.8 %       | 1× cheap, 3× mid |
-| medium_coding  | 4 | 80.0 %       | 4× mid |
-| reasoning      | 3 | 86.3 %       | 1× cheap, 2× mid |
-| hard_coding    | 4 | 80.0 %       | 4× mid |
-| writing        | 2 | 80.0 %       | 2× mid |
+| Category        | n | Mean savings | Picked               |
+| --------------- | - | ------------ | -------------------- |
+| trivial         | 5 | **100.0 %**  | 4× gpt5mini, 1× sonnet |
+| simple_qa       | 5 | **100.0 %**  | 4× gpt5mini, 1× sonnet |
+| summarisation   | 3 | **100.0 %**  | 2× gpt5mini, 1× sonnet |
+| light_coding    | 4 | **100.0 %**  | 4× sonnet            |
+| medium_coding   | 4 | **100.0 %**  | 4× sonnet            |
+| reasoning       | 3 | **100.0 %**  | 1× gpt5mini, 2× sonnet |
+| hard_coding     | 4 | **100.0 %**  | 4× sonnet            |
+| writing         | 2 | **100.0 %**  | 2× sonnet            |
 
-**Why no `premium` picks?** The 3.5-Sonnet model clears the configured
+**What this means in real USD.** Per 1M input tokens:
+
+| Model        | $/1M in | $/1M out | vs opus (input)   |
+| ------------ | ------- | -------- | ----------------- |
+| gpt5mini     | $0.15   | $0.60    | **100× cheaper**  |
+| sonnet       | $3.00   | $15.00   | **5× cheaper**    |
+| opus         | $15.00  | $75.00   | baseline          |
+
+For a typical 200-token prompt:
+
+- `gpt5mini` ≈ $0.00003 input / $0.00006 output
+- `sonnet`   ≈ $0.0006 input / $0.003 output
+- `opus`     ≈ $0.003 input / $0.015 output
+
+**Why no `opus` picks?** Sonnet's overall score cleared the configured
 threshold (80) for every task in the battery. The selector correctly
-identified that the extra cost of the frontier model wasn't justified.
-Lower the threshold or tighten the descriptions and the selector will
-start to pick `premium` for the hardest tasks.
+identified that the extra cost of the frontier model wasn't justified for
+this task mix. Lower the threshold to 60 or tighten the `description`/
+`strengths` on opus, and the selector will start to pick opus for the
+hardest tasks.
 
-**Cost scaling.** With the example config the relative cost units are
-`cheap = 1`, `mid = 20`, `premium = 100`. Translating to real USD per
-1 M tokens (≈ `$0.15 / $3 / $3`) the same battery on a real workload
-would save on the order of **70-90 % of model spend**, depending on
-task mix.
-
-**Raw data:** [`benchmarks/output/results.json`](benchmarks/output/results.json)
-(489 lines) — every score, every reason, every latency.
+**Raw data:** [`benchmarks/output/results.json`](benchmarks/output/results.json) — every score, every reason, every latency, every USD estimate.
 
 ---
 
@@ -333,11 +412,11 @@ task mix.
 ```
 modeldirector/
 ├── modeldirector/
-│   ├── config.py            # Pydantic config models
+│   ├── config.py            # Pydantic config models (Cost, ModelProfile, PolicyConfig, ...)
 │   ├── loader.py            # YAML / dict loader, ${ENV} expansion
-│   ├── models.py            # Public types: ModelScore, SelectionResult
+│   ├── models.py            # Public types: ModelScore, SelectionResult (with estimated_cost_usd)
 │   ├── policy.py            # Policy engine (3 built-ins + custom)
-│   ├── selector.py          # Selector engine (LiteLLM, dynamic prompt)
+│   ├── selector.py          # Selector engine (LiteLLM, dynamic prompt) + token estimation
 │   └── adapters/
 │       ├── cli.py           # click-based CLI
 │       ├── rest.py          # FastAPI server
@@ -346,13 +425,18 @@ modeldirector/
 │   └── run_benchmark.py     # 30-task real-LLM benchmark
 ├── examples/
 │   └── config.yaml          # ready-to-use config
-├── tests/                   # 37 unit + 3 integration tests
+├── tests/                   # 43 unit + 4 integration tests
 ├── docs/
 │   └── hero.svg             # README hero
 ├── prd.md
 ├── pyproject.toml
 └── README.md
 ```
+
+The engine is the product. Adapters are derived. Adding a new interface
+(Discord bot, Slack command, custom agent, etc.) is a matter of
+constructing a `ModelDirector` and translating the input/output to the
+adapter's protocol.
 
 ---
 
@@ -363,10 +447,13 @@ modeldirector/
 - **Model-agnostic** — never hardcodes model names. You define the candidate
   set; ModelDirector works with any provider LiteLLM supports (OpenAI,
   Anthropic, Ollama, vLLM, Bedrock, Azure, etc.).
+- **Cost-transparent** — `cost` is a first-class field, `estimated_cost_usd`
+  is in every response. The trade-off is visible, not hidden.
 - **Configuration first** — every threshold, every policy, every model is
   config. No magic defaults that hide the cost trade-off.
-- **Auditable** — the response includes per-model scores, the reason, and
-  the policy that was applied. You always know *why* a model was picked.
+- **Auditable** — the response includes per-model scores, per-model cost,
+  the reason, and the policy that was applied. You always know *why* a
+  model was picked.
 
 ---
 

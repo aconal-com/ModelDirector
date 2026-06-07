@@ -1,17 +1,14 @@
 """Tests for config loading and validation."""
 from __future__ import annotations
 
-import os
 from textwrap import dedent
 
 import pytest
-import yaml
 
 from modeldirector.config import (
     Capabilities,
-    Config,
+    Cost,
     ModelProfile,
-    PolicyConfig,
     SelectorConfig,
 )
 from modeldirector.loader import load_config
@@ -24,46 +21,123 @@ def test_loads_minimal_config(tmp_path):
             """\
             selector:
               provider: openrouter
-              model: openai/gpt-5-mini
+              model: openai/gpt-4o-mini
             models:
-              - id: cheap
-                name: gpt-5-mini
+              - id: gpt5mini
+                name: gpt-4o-mini
                 description: small model
                 capabilities:
                   reasoning: 80
                   coding: 80
                   context: 80
                 priority: 1
+                cost: { input: 0.15, output: 0.60 }
             """
         )
     )
     cfg = load_config(cfg_path)
     assert cfg.selector.provider == "openrouter"
-    assert cfg.selector.model == "openai/gpt-5-mini"
+    assert cfg.selector.model == "openai/gpt-4o-mini"
     assert cfg.policy.type == "cheapest_capable"
     assert cfg.policy.threshold == 85
     assert len(cfg.models) == 1
-    assert cfg.models[0].id == "cheap"
-    assert cfg.models[0].cost == 1.0  # default from priority 1
+    assert cfg.models[0].id == "gpt5mini"
+    assert cfg.models[0].cost.input == 0.15
+    assert cfg.models[0].cost.output == 0.60
 
 
 def test_loads_dict_directly():
     cfg = load_config(
         {
             "selector": {"provider": "anthropic", "model": "claude-sonnet"},
-            "policy": {"type": "balanced"},
+            "policy": {"type": "best_value"},
             "models": [
                 {
-                    "id": "m",
+                    "id": "sonnet",
                     "name": "claude-sonnet",
                     "description": "test",
                     "capabilities": {"reasoning": 90, "coding": 90, "context": 90},
                     "priority": 2,
+                    "cost": {"input": 3.0, "output": 15.0},
                 }
             ],
         }
     )
-    assert cfg.policy.type == "balanced"
+    assert cfg.policy.type == "best_value"
+
+
+def test_legacy_balanced_aliases_to_best_value():
+    """`balanced` (v0.0.x) is accepted and coerced to `best_value`."""
+    cfg = load_config(
+        {
+            "selector": {"provider": "openrouter", "model": "openai/gpt-4o-mini"},
+            "policy": {"type": "balanced"},
+            "models": [
+                {
+                    "id": "sonnet",
+                    "name": "claude-sonnet",
+                    "description": "x",
+                    "capabilities": {"reasoning": 80, "coding": 80, "context": 80},
+                    "priority": 1,
+                    "cost": {"input": 3.0, "output": 15.0},
+                }
+            ],
+        }
+    )
+    assert cfg.policy.type == "best_value"
+
+
+def test_cost_accepts_legacy_single_number():
+    """A bare number for `cost` is coerced to Cost(input=x, output=x) for back-compat."""
+    p = ModelProfile(
+        id="gpt5mini",
+        name="gpt-4o-mini",
+        description="x",
+        capabilities=Capabilities(reasoning=80, coding=80, context=80),
+        priority=1,
+        cost=1.0,
+    )
+    assert isinstance(p.cost, Cost)
+    assert p.cost.input == 1.0
+    assert p.cost.output == 1.0
+
+
+def test_cost_accepts_dict_form():
+    p = ModelProfile(
+        id="gpt5mini",
+        name="gpt-4o-mini",
+        description="x",
+        capabilities=Capabilities(reasoning=80, coding=80, context=80),
+        priority=1,
+        cost={"input": 0.15, "output": 0.60},
+    )
+    assert p.cost.input == 0.15
+    assert p.cost.output == 0.60
+
+
+def test_strengths_default_to_empty_list():
+    p = ModelProfile(
+        id="x",
+        name="x",
+        description="x",
+        capabilities=Capabilities(reasoning=80, coding=80, context=80),
+        priority=1,
+        cost={"input": 1.0, "output": 1.0},
+    )
+    assert p.strengths == []
+
+
+def test_strengths_persist_from_config():
+    p = ModelProfile(
+        id="sonnet",
+        name="claude-sonnet",
+        description="x",
+        strengths=["coding", "architecture", "refactoring"],
+        capabilities=Capabilities(reasoning=80, coding=80, context=80),
+        priority=1,
+        cost={"input": 3.0, "output": 15.0},
+    )
+    assert p.strengths == ["coding", "architecture", "refactoring"]
 
 
 def test_expands_env_var_placeholder(tmp_path, monkeypatch):
@@ -74,14 +148,15 @@ def test_expands_env_var_placeholder(tmp_path, monkeypatch):
             """\
             selector:
               provider: openrouter
-              model: openai/gpt-5-mini
+              model: openai/gpt-4o-mini
               api_key: ${MY_TEST_KEY}
             models:
-              - id: cheap
-                name: gpt-5-mini
+              - id: gpt5mini
+                name: gpt-4o-mini
                 description: test
                 capabilities: {reasoning: 80, coding: 80, context: 80}
                 priority: 1
+                cost: { input: 0.15, output: 0.60 }
             """
         )
     )
@@ -91,13 +166,13 @@ def test_expands_env_var_placeholder(tmp_path, monkeypatch):
 
 def test_resolved_api_key_falls_back_to_env(monkeypatch):
     monkeypatch.setenv("OPENROUTER_API_KEY", "sk-from-env")
-    sel = SelectorConfig(provider="openrouter", model="openai/gpt-5-mini")
+    sel = SelectorConfig(provider="openrouter", model="openai/gpt-4o-mini")
     assert sel.resolved_api_key() == "sk-from-env"
 
 
 def test_resolved_api_key_errors_when_missing(monkeypatch):
     monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
-    sel = SelectorConfig(provider="openrouter", model="openai/gpt-5-mini")
+    sel = SelectorConfig(provider="openrouter", model="openai/gpt-4o-mini")
     with pytest.raises(ValueError, match="No API key"):
         sel.resolved_api_key()
 
@@ -106,7 +181,7 @@ def test_rejects_duplicate_model_ids():
     with pytest.raises(ValueError, match="Duplicate model ids"):
         load_config(
             {
-                "selector": {"provider": "openrouter", "model": "openai/gpt-5-mini"},
+                "selector": {"provider": "openrouter", "model": "openai/gpt-4o-mini"},
                 "models": [
                     {
                         "id": "dup",
@@ -114,6 +189,7 @@ def test_rejects_duplicate_model_ids():
                         "description": "x",
                         "capabilities": {"reasoning": 80, "coding": 80, "context": 80},
                         "priority": 1,
+                        "cost": {"input": 1.0, "output": 1.0},
                     },
                     {
                         "id": "dup",
@@ -121,6 +197,7 @@ def test_rejects_duplicate_model_ids():
                         "description": "y",
                         "capabilities": {"reasoning": 80, "coding": 80, "context": 80},
                         "priority": 2,
+                        "cost": {"input": 1.0, "output": 1.0},
                     },
                 ],
             }
@@ -131,7 +208,7 @@ def test_rejects_empty_models_list():
     with pytest.raises(ValueError, match="at least 1"):
         load_config(
             {
-                "selector": {"provider": "openrouter", "model": "openai/gpt-5-mini"},
+                "selector": {"provider": "openrouter", "model": "openai/gpt-4o-mini"},
                 "models": [],
             }
         )
@@ -145,6 +222,7 @@ def test_rejects_invalid_capability_score():
             description="x",
             capabilities=Capabilities(reasoning=200, coding=80, context=80),
             priority=1,
+            cost={"input": 1.0, "output": 1.0},
         )
 
 
@@ -156,34 +234,10 @@ def test_rejects_empty_id():
             description="x",
             capabilities=Capabilities(reasoning=80, coding=80, context=80),
             priority=1,
+            cost={"input": 1.0, "output": 1.0},
         )
 
 
-def test_default_cost_uses_priority_bucket():
-    p1 = ModelProfile(
-        id="a", name="a", description="x",
-        capabilities=Capabilities(reasoning=80, coding=80, context=80),
-        priority=1,
-    )
-    p2 = ModelProfile(
-        id="b", name="b", description="x",
-        capabilities=Capabilities(reasoning=80, coding=80, context=80),
-        priority=3,
-    )
-    p99 = ModelProfile(
-        id="c", name="c", description="x",
-        capabilities=Capabilities(reasoning=80, coding=80, context=80),
-        priority=99,
-    )
-    assert p1.cost == 1.0
-    assert p2.cost == 20.0
-    assert p99.cost == 990.0  # priority * 10 fallback
-
-
-def test_explicit_cost_overrides_default():
-    p = ModelProfile(
-        id="a", name="a", description="x",
-        capabilities=Capabilities(reasoning=80, coding=80, context=80),
-        priority=1, cost=42.0,
-    )
-    assert p.cost == 42.0
+def test_rejects_negative_cost():
+    with pytest.raises(ValueError):
+        Cost(input=-1.0, output=0.0)

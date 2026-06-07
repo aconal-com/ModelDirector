@@ -1,5 +1,5 @@
 """Real-world benchmark: run a battery of diverse prompts through ModelDirector
-and report the cost savings vs. a naive 'always use the premium model' baseline.
+and report the cost savings vs. a naive 'always use the most-expensive model' baseline.
 
 Output is printed to stdout (table + JSON) and written to
 ``benchmarks/output/results.json`` so the README can be generated from it.
@@ -93,9 +93,9 @@ class TaskResult:
     category: str
     prompt: str
     selected_model: str
-    selected_cost: float
-    premium_cost: float
-    savings: float               # 0.0 - 1.0
+    selected_cost_usd: float           # the actual per-prompt USD estimate
+    baseline_cost_usd: float            # the baseline's per-prompt USD estimate
+    savings: float                       # 0.0 - 1.0
     overall_scores: dict[str, int]
     selector_latency_s: float
     reason: str
@@ -108,7 +108,7 @@ class BenchmarkReport:
     config_path: str
     selector_model: str
     baseline_model: str
-    baseline_cost: float
+    baseline_cost_usd: float
     tasks: list[TaskResult] = field(default_factory=list)
     errors: list[dict] = field(default_factory=list)
 
@@ -125,14 +125,24 @@ def run_benchmark(config_path: Path, baseline_id: str) -> BenchmarkReport:
             f"baseline model '{baseline_id}' not in config. "
             f"Available: {list(profiles_by_id)}"
         )
-    baseline_cost = float(profiles_by_id[baseline_id].cost or 0.0)
+    # Baseline cost = the highest-cost model in the candidate set. This
+    # represents the naive "always use the most expensive model" behaviour.
+    highest = max(profiles_by_id.values(), key=lambda p: p.cost.input)
+    baseline_cost = float(highest.cost.input)
+    baseline_id_resolved = highest.id
+    if baseline_id_resolved != baseline_id:
+        print(
+            f"  Note: requested baseline '{baseline_id}' overridden by "
+            f"highest-cost model '{baseline_id_resolved}' "
+            f"(${baseline_cost:.2f}/1M input)."
+        )
 
     report = BenchmarkReport(
         timestamp=datetime.now(timezone.utc).isoformat(timespec="seconds"),
         config_path=str(config_path),
         selector_model=f"{cfg.selector.provider}/{cfg.selector.model}",
-        baseline_model=baseline_id,
-        baseline_cost=baseline_cost,
+        baseline_model=baseline_id_resolved,
+        baseline_cost_usd=baseline_cost,
     )
 
     for i, (category, prompt) in enumerate(TASKS, start=1):
@@ -147,7 +157,8 @@ def run_benchmark(config_path: Path, baseline_id: str) -> BenchmarkReport:
             continue
         elapsed = time.perf_counter() - t0
 
-        chosen_cost = float(profiles_by_id[result.selected_model].cost or 0.0)
+        # Use the per-prompt USD estimate produced by the engine.
+        chosen_cost = float(result.estimated_cost_usd.get(result.selected_model, 0.0))
         savings = (baseline_cost - chosen_cost) / baseline_cost if baseline_cost else 0.0
 
         report.tasks.append(
@@ -155,8 +166,8 @@ def run_benchmark(config_path: Path, baseline_id: str) -> BenchmarkReport:
                 category=category,
                 prompt=prompt,
                 selected_model=result.selected_model,
-                selected_cost=chosen_cost,
-                premium_cost=baseline_cost,
+                selected_cost_usd=chosen_cost,
+                baseline_cost_usd=baseline_cost,
                 savings=savings,
                 overall_scores={k: v.overall for k, v in result.scores.items()},
                 selector_latency_s=elapsed,
@@ -174,6 +185,14 @@ def run_benchmark(config_path: Path, baseline_id: str) -> BenchmarkReport:
 
 def _pct(n: float) -> str:
     return f"{n * 100:.1f}%"
+
+
+def _usd(n: float) -> str:
+    if n == 0:
+        return "$0.00"
+    if n < 0.01:
+        return f"${n:.4f}"
+    return f"${n:.2f}"
 
 
 def render_report(report: BenchmarkReport) -> str:
@@ -200,26 +219,27 @@ def render_report(report: BenchmarkReport) -> str:
     lines.append("=" * 70)
     lines.append("  ModelDirector benchmark")
     lines.append("=" * 70)
-    lines.append(f"  Timestamp         : {report.timestamp}")
-    lines.append(f"  Config            : {report.config_path}")
-    lines.append(f"  Selector LLM      : {report.selector_model}")
-    lines.append(f"  Baseline (always) : {report.baseline_model} (cost={report.baseline_cost})")
-    lines.append(f"  Tasks run         : {len(report.tasks)} / {len(TASKS)}")
+    lines.append(f"  Timestamp              : {report.timestamp}")
+    lines.append(f"  Config                 : {report.config_path}")
+    lines.append(f"  Selector LLM           : {report.selector_model}")
+    lines.append(f"  Baseline (always)      : {report.baseline_model} "
+                 f"({_usd(report.baseline_cost_usd)}/1M input)")
+    lines.append(f"  Tasks run              : {len(report.tasks)} / {len(TASKS)}")
     if report.errors:
-        lines.append(f"  Errors            : {len(report.errors)}")
+        lines.append(f"  Errors                 : {len(report.errors)}")
     lines.append("")
 
     lines.append("  Model picks")
     lines.append("  " + "-" * 40)
     for model_id, count in sorted(picks.items(), key=lambda x: -x[1]):
         bar = "#" * count
-        lines.append(f"    {model_id:<10} {count:>3}  {bar}")
+        lines.append(f"    {model_id:<12} {count:>3}  {bar}")
     lines.append("")
 
     lines.append("  Savings vs always-premium baseline")
     lines.append("  " + "-" * 40)
     lines.append(f"    Mean savings    : {_pct(total_savings)}")
-    lines.append(f"    Per-category    :")
+    lines.append("    Per-category    :")
     for cat, savings in sorted(by_cat.items()):
         lines.append(f"      {cat:<15}  mean savings {_pct(sum(savings) / len(savings))}  (n={len(savings)})")
     lines.append("")
@@ -234,12 +254,12 @@ def render_report(report: BenchmarkReport) -> str:
     # Detailed per-task output
     lines.append("  Per-task detail")
     lines.append("  " + "-" * 70)
-    lines.append(f"    {'category':<15} {'picked':<10} {'savings':<8} {'latency':<8} prompt")
+    lines.append(f"    {'category':<15} {'picked':<10} {'savings':<8} {'cost':<10} {'latency':<8} prompt")
     for t in report.tasks:
         prompt_short = t.prompt[:50] + ("..." if len(t.prompt) > 50 else "")
         lines.append(
             f"    {t.category:<15} {t.selected_model:<10} {_pct(t.savings):<8} "
-            f"{t.selector_latency_s:.2f}s     {prompt_short}"
+            f"{_usd(t.selected_cost_usd):<10} {t.selector_latency_s:.2f}s     {prompt_short}"
         )
     lines.append("")
 
@@ -261,8 +281,9 @@ def main() -> int:
     parser.add_argument(
         "--baseline",
         "-b",
-        default="premium",
-        help="Model id to use as the cost baseline (default: 'premium').",
+        default="opus",
+        help="Preferred model id to use as the cost baseline. The engine will "
+             "fall back to the highest-cost model in the config if this id is missing.",
     )
     parser.add_argument(
         "--out",

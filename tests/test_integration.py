@@ -26,14 +26,14 @@ def director() -> ModelDirector:
     return ModelDirector(load_config(CONFIG_PATH))
 
 
-def test_select_simple_task_picks_cheap(director):
-    """A trivial prompt should not need the premium model."""
+def test_select_simple_task_picks_cheap_or_mid(director):
+    """A trivial prompt should not need the frontier model."""
     result = director.select("Translate 'hello' to Spanish.")
-    assert result.selected_model in {"cheap", "mid"}
+    assert result.selected_model in {"gpt5mini", "sonnet"}
     assert result.policy == "cheapest_capable"
-    assert "cheap" in result.scores
-    assert "mid" in result.scores
-    assert "premium" in result.scores
+    assert "gpt5mini" in result.scores
+    assert "sonnet" in result.scores
+    assert "opus" in result.scores
 
 
 def test_select_hard_task_picks_stronger_model(director):
@@ -44,12 +44,22 @@ def test_select_hard_task_picks_stronger_model(director):
         "test suite that covers race conditions and clock skew."
     )
     result = director.select(hard_prompt)
-    # The hard task should at least consider premium or mid as a candidate -
+    # The hard task should at least consider opus or sonnet as a candidate -
     # we just verify the selector returned something sensible.
-    assert result.selected_model in {"cheap", "mid", "premium"}
+    assert result.selected_model in {"gpt5mini", "sonnet", "opus"}
     assert all(0 <= s.overall <= 100 for s in result.scores.values())
 
 
 def test_score_returns_all_three_models(director):
     scores = director.score("Write a haiku about Python.")
-    assert set(scores) == {"cheap", "mid", "premium"}
+    assert set(scores) == {"gpt5mini", "sonnet", "opus"}
+
+
+def test_select_returns_estimated_cost_usd(director):
+    result = director.select("Summarise this article.")
+    # estimated_cost_usd must be present for every configured model
+    assert set(result.estimated_cost_usd) == {"gpt5mini", "sonnet", "opus"}
+    assert result.input_tokens > 0
+    # Cost ordering must reflect the configured cost ordering
+    assert result.estimated_cost_usd["gpt5mini"] < result.estimated_cost_usd["sonnet"]
+    assert result.estimated_cost_usd["sonnet"] < result.estimated_cost_usd["opus"]

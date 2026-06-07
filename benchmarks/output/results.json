@@ -1,488 +1,488 @@
 {
-  "timestamp": "2026-06-07T01:24:55+00:00",
+  "timestamp": "2026-06-07T07:35:23+00:00",
   "config_path": "/Users/aconal/Documents/github/ModelDirector/examples/config.yaml",
   "selector_model": "openrouter/anthropic/claude-3.5-haiku",
-  "baseline_model": "premium",
-  "baseline_cost": 100.0,
+  "baseline_model": "opus",
+  "baseline_cost_usd": 15.0,
   "tasks": [
     {
       "category": "trivial",
       "prompt": "Translate the word 'hello' to French.",
-      "selected_model": "cheap",
-      "selected_cost": 1.0,
-      "premium_cost": 100.0,
-      "savings": 0.99,
+      "selected_model": "gpt5mini",
+      "selected_cost_usd": 7e-06,
+      "baseline_cost_usd": 15.0,
+      "savings": 0.9999995333333334,
       "overall_scores": {
-        "cheap": 90,
-        "mid": 95,
-        "premium": 85
+        "gpt5mini": 90,
+        "sonnet": 85,
+        "opus": 60
       },
-      "selector_latency_s": 3.984342041891068,
-      "reason": "'cheap' is the first model exceeding the threshold of 80 (overall=90, priority=1, cost=1.0).",
+      "selector_latency_s": 3.7029134170152247,
+      "reason": "'gpt5mini' is the first model exceeding the threshold of 80 (overall=90, priority=1, cost=$0.15/1M in, $0.60/1M out).",
       "policy": "cheapest_capable"
     },
     {
       "category": "trivial",
       "prompt": "What is 2 + 2?",
-      "selected_model": "cheap",
-      "selected_cost": 1.0,
-      "premium_cost": 100.0,
-      "savings": 0.99,
+      "selected_model": "gpt5mini",
+      "selected_cost_usd": 6e-06,
+      "baseline_cost_usd": 15.0,
+      "savings": 0.9999996,
       "overall_scores": {
-        "cheap": 95,
-        "mid": 98,
-        "premium": 96
+        "gpt5mini": 90,
+        "sonnet": 85,
+        "opus": 75
       },
-      "selector_latency_s": 4.0298398330342025,
-      "reason": "'cheap' is the first model exceeding the threshold of 80 (overall=95, priority=1, cost=1.0).",
+      "selector_latency_s": 3.606637166813016,
+      "reason": "'gpt5mini' is the first model exceeding the threshold of 80 (overall=90, priority=1, cost=$0.15/1M in, $0.60/1M out).",
       "policy": "cheapest_capable"
     },
     {
       "category": "trivial",
       "prompt": "Sort this list: [3, 1, 4, 1, 5, 9, 2, 6]",
-      "selected_model": "mid",
-      "selected_cost": 20.0,
-      "premium_cost": 100.0,
-      "savings": 0.8,
+      "selected_model": "sonnet",
+      "selected_cost_usd": 0.000504,
+      "baseline_cost_usd": 15.0,
+      "savings": 0.9999664,
       "overall_scores": {
-        "cheap": 75,
-        "mid": 90,
-        "premium": 85
+        "gpt5mini": 75,
+        "sonnet": 90,
+        "opus": 85
       },
-      "selector_latency_s": 3.9015048327855766,
-      "reason": "'mid' is the first model exceeding the threshold of 80 (overall=90, priority=2, cost=20.0).",
+      "selector_latency_s": 4.489037416875362,
+      "reason": "'sonnet' is the first model exceeding the threshold of 80 (overall=90, priority=2, cost=$3.00/1M in, $15.00/1M out).",
       "policy": "cheapest_capable"
     },
     {
       "category": "trivial",
       "prompt": "Convert 'cat' to uppercase.",
-      "selected_model": "cheap",
-      "selected_cost": 1.0,
-      "premium_cost": 100.0,
-      "savings": 0.99,
+      "selected_model": "gpt5mini",
+      "selected_cost_usd": 5e-06,
+      "baseline_cost_usd": 15.0,
+      "savings": 0.9999996666666667,
       "overall_scores": {
-        "cheap": 95,
-        "mid": 98,
-        "premium": 90
+        "gpt5mini": 90,
+        "sonnet": 85,
+        "opus": 60
       },
-      "selector_latency_s": 4.589951874921098,
-      "reason": "'cheap' is the first model exceeding the threshold of 80 (overall=95, priority=1, cost=1.0).",
+      "selector_latency_s": 5.053020374849439,
+      "reason": "'gpt5mini' is the first model exceeding the threshold of 80 (overall=90, priority=1, cost=$0.15/1M in, $0.60/1M out).",
       "policy": "cheapest_capable"
     },
     {
       "category": "trivial",
       "prompt": "What's the capital of Japan?",
-      "selected_model": "cheap",
-      "selected_cost": 1.0,
-      "premium_cost": 100.0,
-      "savings": 0.99,
+      "selected_model": "gpt5mini",
+      "selected_cost_usd": 5e-06,
+      "baseline_cost_usd": 15.0,
+      "savings": 0.9999996666666667,
       "overall_scores": {
-        "cheap": 90,
-        "mid": 95,
-        "premium": 85
+        "gpt5mini": 90,
+        "sonnet": 95,
+        "opus": 85
       },
-      "selector_latency_s": 3.774135832907632,
-      "reason": "'cheap' is the first model exceeding the threshold of 80 (overall=90, priority=1, cost=1.0).",
+      "selector_latency_s": 4.440119415987283,
+      "reason": "'gpt5mini' is the first model exceeding the threshold of 80 (overall=90, priority=1, cost=$0.15/1M in, $0.60/1M out).",
       "policy": "cheapest_capable"
     },
     {
       "category": "simple_qa",
       "prompt": "List three primary colours.",
-      "selected_model": "cheap",
-      "selected_cost": 1.0,
-      "premium_cost": 100.0,
-      "savings": 0.99,
+      "selected_model": "gpt5mini",
+      "selected_cost_usd": 4e-06,
+      "baseline_cost_usd": 15.0,
+      "savings": 0.9999997333333333,
       "overall_scores": {
-        "cheap": 90,
-        "mid": 85,
-        "premium": 70
+        "gpt5mini": 90,
+        "sonnet": 85,
+        "opus": 60
       },
-      "selector_latency_s": 4.076124457875267,
-      "reason": "'cheap' is the first model exceeding the threshold of 80 (overall=90, priority=1, cost=1.0).",
+      "selector_latency_s": 3.648036333033815,
+      "reason": "'gpt5mini' is the first model exceeding the threshold of 80 (overall=90, priority=1, cost=$0.15/1M in, $0.60/1M out).",
       "policy": "cheapest_capable"
     },
     {
       "category": "simple_qa",
       "prompt": "Name a programming language created by Guido van Rossum.",
-      "selected_model": "cheap",
-      "selected_cost": 1.0,
-      "premium_cost": 100.0,
-      "savings": 0.99,
+      "selected_model": "sonnet",
+      "selected_cost_usd": 0.000216,
+      "baseline_cost_usd": 15.0,
+      "savings": 0.9999856,
       "overall_scores": {
-        "cheap": 80,
-        "mid": 95,
-        "premium": 98
+        "gpt5mini": 75,
+        "sonnet": 90,
+        "opus": 95
       },
-      "selector_latency_s": 4.342026375001296,
-      "reason": "'cheap' is the first model exceeding the threshold of 80 (overall=80, priority=1, cost=1.0).",
+      "selector_latency_s": 4.349375790916383,
+      "reason": "'sonnet' is the first model exceeding the threshold of 80 (overall=90, priority=2, cost=$3.00/1M in, $15.00/1M out).",
       "policy": "cheapest_capable"
     },
     {
       "category": "simple_qa",
       "prompt": "Who wrote 'Pride and Prejudice'?",
-      "selected_model": "cheap",
-      "selected_cost": 1.0,
-      "premium_cost": 100.0,
-      "savings": 0.99,
+      "selected_model": "gpt5mini",
+      "selected_cost_usd": 8e-06,
+      "baseline_cost_usd": 15.0,
+      "savings": 0.9999994666666667,
       "overall_scores": {
-        "cheap": 85,
-        "mid": 95,
-        "premium": 90
+        "gpt5mini": 85,
+        "sonnet": 90,
+        "opus": 95
       },
-      "selector_latency_s": 3.7043412080965936,
-      "reason": "'cheap' is the first model exceeding the threshold of 80 (overall=85, priority=1, cost=1.0).",
+      "selector_latency_s": 3.7895755409263074,
+      "reason": "'gpt5mini' is the first model exceeding the threshold of 80 (overall=85, priority=1, cost=$0.15/1M in, $0.60/1M out).",
       "policy": "cheapest_capable"
     },
     {
       "category": "simple_qa",
       "prompt": "What HTTP status code means 'Not Found'?",
-      "selected_model": "cheap",
-      "selected_cost": 1.0,
-      "premium_cost": 100.0,
-      "savings": 0.99,
+      "selected_model": "gpt5mini",
+      "selected_cost_usd": 7e-06,
+      "baseline_cost_usd": 15.0,
+      "savings": 0.9999995333333334,
       "overall_scores": {
-        "cheap": 85,
-        "mid": 95,
-        "premium": 90
+        "gpt5mini": 85,
+        "sonnet": 90,
+        "opus": 95
       },
-      "selector_latency_s": 3.966657957993448,
-      "reason": "'cheap' is the first model exceeding the threshold of 80 (overall=85, priority=1, cost=1.0).",
+      "selector_latency_s": 3.785852042026818,
+      "reason": "'gpt5mini' is the first model exceeding the threshold of 80 (overall=85, priority=1, cost=$0.15/1M in, $0.60/1M out).",
       "policy": "cheapest_capable"
     },
     {
       "category": "simple_qa",
       "prompt": "Define the term 'API' in one sentence.",
-      "selected_model": "cheap",
-      "selected_cost": 1.0,
-      "premium_cost": 100.0,
-      "savings": 0.99,
+      "selected_model": "gpt5mini",
+      "selected_cost_usd": 8e-06,
+      "baseline_cost_usd": 15.0,
+      "savings": 0.9999994666666667,
       "overall_scores": {
-        "cheap": 85,
-        "mid": 90,
-        "premium": 75
+        "gpt5mini": 80,
+        "sonnet": 90,
+        "opus": 95
       },
-      "selector_latency_s": 4.455064750043675,
-      "reason": "'cheap' is the first model exceeding the threshold of 80 (overall=85, priority=1, cost=1.0).",
+      "selector_latency_s": 4.551996875088662,
+      "reason": "'gpt5mini' is the first model exceeding the threshold of 80 (overall=80, priority=1, cost=$0.15/1M in, $0.60/1M out).",
       "policy": "cheapest_capable"
     },
     {
       "category": "summarisation",
       "prompt": "Summarise this in one sentence: The quick brown fox jumps over the lazy dog. The dog barks. The fox runs away.",
-      "selected_model": "cheap",
-      "selected_cost": 1.0,
-      "premium_cost": 100.0,
-      "savings": 0.99,
+      "selected_model": "gpt5mini",
+      "selected_cost_usd": 2.1e-05,
+      "baseline_cost_usd": 15.0,
+      "savings": 0.9999986,
       "overall_scores": {
-        "cheap": 85,
-        "mid": 90,
-        "premium": 75
+        "gpt5mini": 85,
+        "sonnet": 75,
+        "opus": 50
       },
-      "selector_latency_s": 4.163468499900773,
-      "reason": "'cheap' is the first model exceeding the threshold of 80 (overall=85, priority=1, cost=1.0).",
+      "selector_latency_s": 3.675568874925375,
+      "reason": "'gpt5mini' is the first model exceeding the threshold of 80 (overall=85, priority=1, cost=$0.15/1M in, $0.60/1M out).",
       "policy": "cheapest_capable"
     },
     {
       "category": "summarisation",
       "prompt": "TLDR this commit message: 'Fix off-by-one error in pagination cursor when offset equals total count.'",
-      "selected_model": "mid",
-      "selected_cost": 20.0,
-      "premium_cost": 100.0,
-      "savings": 0.8,
+      "selected_model": "sonnet",
+      "selected_cost_usd": 0.000378,
+      "baseline_cost_usd": 15.0,
+      "savings": 0.9999748,
       "overall_scores": {
-        "cheap": 75,
-        "mid": 90,
-        "premium": 85
+        "gpt5mini": 70,
+        "sonnet": 90,
+        "opus": 85
       },
-      "selector_latency_s": 3.7421022090129554,
-      "reason": "'mid' is the first model exceeding the threshold of 80 (overall=90, priority=2, cost=20.0).",
+      "selector_latency_s": 4.367154916981235,
+      "reason": "'sonnet' is the first model exceeding the threshold of 80 (overall=90, priority=2, cost=$3.00/1M in, $15.00/1M out).",
       "policy": "cheapest_capable"
     },
     {
       "category": "summarisation",
       "prompt": "Summarise: 'Paris is the capital of France. It has the Eiffel Tower. It is in Europe.'",
-      "selected_model": "mid",
-      "selected_cost": 20.0,
-      "premium_cost": 100.0,
-      "savings": 0.8,
+      "selected_model": "gpt5mini",
+      "selected_cost_usd": 1.9e-05,
+      "baseline_cost_usd": 15.0,
+      "savings": 0.9999987333333333,
       "overall_scores": {
-        "cheap": 75,
-        "mid": 85,
-        "premium": 65
+        "gpt5mini": 85,
+        "sonnet": 75,
+        "opus": 50
       },
-      "selector_latency_s": 3.9691187501884997,
-      "reason": "'mid' is the first model exceeding the threshold of 80 (overall=85, priority=2, cost=20.0).",
+      "selector_latency_s": 3.67077162489295,
+      "reason": "'gpt5mini' is the first model exceeding the threshold of 80 (overall=85, priority=1, cost=$0.15/1M in, $0.60/1M out).",
       "policy": "cheapest_capable"
     },
     {
       "category": "light_coding",
       "prompt": "Write a Python function that returns the length of a string.",
-      "selected_model": "cheap",
-      "selected_cost": 1.0,
-      "premium_cost": 100.0,
-      "savings": 0.99,
+      "selected_model": "sonnet",
+      "selected_cost_usd": 0.000216,
+      "baseline_cost_usd": 15.0,
+      "savings": 0.9999856,
       "overall_scores": {
-        "cheap": 85,
-        "mid": 95,
-        "premium": 90
+        "gpt5mini": 75,
+        "sonnet": 90,
+        "opus": 85
       },
-      "selector_latency_s": 3.817835916997865,
-      "reason": "'cheap' is the first model exceeding the threshold of 80 (overall=85, priority=1, cost=1.0).",
+      "selector_latency_s": 4.204402167117223,
+      "reason": "'sonnet' is the first model exceeding the threshold of 80 (overall=90, priority=2, cost=$3.00/1M in, $15.00/1M out).",
       "policy": "cheapest_capable"
     },
     {
       "category": "light_coding",
       "prompt": "Write a regex that matches valid email addresses.",
-      "selected_model": "mid",
-      "selected_cost": 20.0,
-      "premium_cost": 100.0,
-      "savings": 0.8,
+      "selected_model": "sonnet",
+      "selected_cost_usd": 0.000162,
+      "baseline_cost_usd": 15.0,
+      "savings": 0.9999892,
       "overall_scores": {
-        "cheap": 75,
-        "mid": 92,
-        "premium": 85
+        "gpt5mini": 70,
+        "sonnet": 90,
+        "opus": 95
       },
-      "selector_latency_s": 4.379969415953383,
-      "reason": "'mid' is the first model exceeding the threshold of 80 (overall=92, priority=2, cost=20.0).",
+      "selector_latency_s": 3.6828170840162784,
+      "reason": "'sonnet' is the first model exceeding the threshold of 80 (overall=90, priority=2, cost=$3.00/1M in, $15.00/1M out).",
       "policy": "cheapest_capable"
     },
     {
       "category": "light_coding",
       "prompt": "Fix the bug: `def add(a, b): return a - b`",
-      "selected_model": "mid",
-      "selected_cost": 20.0,
-      "premium_cost": 100.0,
-      "savings": 0.8,
+      "selected_model": "sonnet",
+      "selected_cost_usd": 0.000288,
+      "baseline_cost_usd": 15.0,
+      "savings": 0.9999808,
       "overall_scores": {
-        "cheap": 75,
-        "mid": 95,
-        "premium": 85
+        "gpt5mini": 70,
+        "sonnet": 92,
+        "opus": 85
       },
-      "selector_latency_s": 4.264072458026931,
-      "reason": "'mid' is the first model exceeding the threshold of 80 (overall=95, priority=2, cost=20.0).",
+      "selector_latency_s": 3.9017842079047114,
+      "reason": "'sonnet' is the first model exceeding the threshold of 80 (overall=92, priority=2, cost=$3.00/1M in, $15.00/1M out).",
       "policy": "cheapest_capable"
     },
     {
       "category": "light_coding",
       "prompt": "Write a one-liner to flatten a list of lists in Python.",
-      "selected_model": "mid",
-      "selected_cost": 20.0,
-      "premium_cost": 100.0,
-      "savings": 0.8,
+      "selected_model": "sonnet",
+      "selected_cost_usd": 0.000252,
+      "baseline_cost_usd": 15.0,
+      "savings": 0.9999832000000001,
       "overall_scores": {
-        "cheap": 75,
-        "mid": 90,
-        "premium": 85
+        "gpt5mini": 75,
+        "sonnet": 95,
+        "opus": 90
       },
-      "selector_latency_s": 6.966185916215181,
-      "reason": "'mid' is the first model exceeding the threshold of 80 (overall=90, priority=2, cost=20.0).",
+      "selector_latency_s": 4.390398750081658,
+      "reason": "'sonnet' is the first model exceeding the threshold of 80 (overall=95, priority=2, cost=$3.00/1M in, $15.00/1M out).",
       "policy": "cheapest_capable"
     },
     {
       "category": "medium_coding",
       "prompt": "Write a Python class for a Stack with push, pop, and is_empty methods.",
-      "selected_model": "mid",
-      "selected_cost": 20.0,
-      "premium_cost": 100.0,
-      "savings": 0.8,
+      "selected_model": "sonnet",
+      "selected_cost_usd": 0.000306,
+      "baseline_cost_usd": 15.0,
+      "savings": 0.9999796,
       "overall_scores": {
-        "cheap": 75,
-        "mid": 95,
-        "premium": 90
+        "gpt5mini": 65,
+        "sonnet": 92,
+        "opus": 90
       },
-      "selector_latency_s": 4.537827666150406,
-      "reason": "'mid' is the first model exceeding the threshold of 80 (overall=95, priority=2, cost=20.0).",
+      "selector_latency_s": 4.315932041965425,
+      "reason": "'sonnet' is the first model exceeding the threshold of 80 (overall=92, priority=2, cost=$3.00/1M in, $15.00/1M out).",
       "policy": "cheapest_capable"
     },
     {
       "category": "medium_coding",
       "prompt": "Implement binary search in Python with O(log n) time complexity.",
-      "selected_model": "mid",
-      "selected_cost": 20.0,
-      "premium_cost": 100.0,
-      "savings": 0.8,
+      "selected_model": "sonnet",
+      "selected_cost_usd": 0.000234,
+      "baseline_cost_usd": 15.0,
+      "savings": 0.9999844,
       "overall_scores": {
-        "cheap": 75,
-        "mid": 92,
-        "premium": 90
+        "gpt5mini": 65,
+        "sonnet": 92,
+        "opus": 95
       },
-      "selector_latency_s": 3.8553200839087367,
-      "reason": "'mid' is the first model exceeding the threshold of 80 (overall=92, priority=2, cost=20.0).",
+      "selector_latency_s": 3.9172824998386204,
+      "reason": "'sonnet' is the first model exceeding the threshold of 80 (overall=92, priority=2, cost=$3.00/1M in, $15.00/1M out).",
       "policy": "cheapest_capable"
     },
     {
       "category": "medium_coding",
       "prompt": "Write a SQL query to find the second-highest salary from an Employee table.",
-      "selected_model": "mid",
-      "selected_cost": 20.0,
-      "premium_cost": 100.0,
-      "savings": 0.8,
+      "selected_model": "sonnet",
+      "selected_cost_usd": 0.000288,
+      "baseline_cost_usd": 15.0,
+      "savings": 0.9999808,
       "overall_scores": {
-        "cheap": 75,
-        "mid": 92,
-        "premium": 85
+        "gpt5mini": 65,
+        "sonnet": 92,
+        "opus": 90
       },
-      "selector_latency_s": 4.199291083030403,
-      "reason": "'mid' is the first model exceeding the threshold of 80 (overall=92, priority=2, cost=20.0).",
+      "selector_latency_s": 3.9591226670891047,
+      "reason": "'sonnet' is the first model exceeding the threshold of 80 (overall=92, priority=2, cost=$3.00/1M in, $15.00/1M out).",
       "policy": "cheapest_capable"
     },
     {
       "category": "medium_coding",
       "prompt": "Write a function to debounce API calls in JavaScript.",
-      "selected_model": "mid",
-      "selected_cost": 20.0,
-      "premium_cost": 100.0,
-      "savings": 0.8,
+      "selected_model": "sonnet",
+      "selected_cost_usd": 0.00018,
+      "baseline_cost_usd": 15.0,
+      "savings": 0.999988,
       "overall_scores": {
-        "cheap": 75,
-        "mid": 92,
-        "premium": 85
+        "gpt5mini": 65,
+        "sonnet": 90,
+        "opus": 85
       },
-      "selector_latency_s": 4.157248541945592,
-      "reason": "'mid' is the first model exceeding the threshold of 80 (overall=92, priority=2, cost=20.0).",
+      "selector_latency_s": 3.896960500162095,
+      "reason": "'sonnet' is the first model exceeding the threshold of 80 (overall=90, priority=2, cost=$3.00/1M in, $15.00/1M out).",
       "policy": "cheapest_capable"
     },
     {
       "category": "reasoning",
       "prompt": "If a train leaves at 9am going 60 mph and another at 10am going 80 mph in the same direction, when does the second catch up?",
-      "selected_model": "mid",
-      "selected_cost": 20.0,
-      "premium_cost": 100.0,
-      "savings": 0.8,
+      "selected_model": "sonnet",
+      "selected_cost_usd": 0.000612,
+      "baseline_cost_usd": 15.0,
+      "savings": 0.9999591999999999,
       "overall_scores": {
-        "cheap": 70,
-        "mid": 90,
-        "premium": 85
+        "gpt5mini": 65,
+        "sonnet": 85,
+        "opus": 75
       },
-      "selector_latency_s": 4.1347410418093204,
-      "reason": "'mid' is the first model exceeding the threshold of 80 (overall=90, priority=2, cost=20.0).",
+      "selector_latency_s": 3.789185042027384,
+      "reason": "'sonnet' is the first model exceeding the threshold of 80 (overall=85, priority=2, cost=$3.00/1M in, $15.00/1M out).",
       "policy": "cheapest_capable"
     },
     {
       "category": "reasoning",
       "prompt": "Explain the difference between TCP and UDP in two paragraphs.",
-      "selected_model": "mid",
-      "selected_cost": 20.0,
-      "premium_cost": 100.0,
-      "savings": 0.8,
+      "selected_model": "sonnet",
+      "selected_cost_usd": 0.000216,
+      "baseline_cost_usd": 15.0,
+      "savings": 0.9999856,
       "overall_scores": {
-        "cheap": 75,
-        "mid": 90,
-        "premium": 85
+        "gpt5mini": 70,
+        "sonnet": 90,
+        "opus": 95
       },
-      "selector_latency_s": 6.126095833955333,
-      "reason": "'mid' is the first model exceeding the threshold of 80 (overall=90, priority=2, cost=20.0).",
+      "selector_latency_s": 3.4870451658498496,
+      "reason": "'sonnet' is the first model exceeding the threshold of 80 (overall=90, priority=2, cost=$3.00/1M in, $15.00/1M out).",
       "policy": "cheapest_capable"
     },
     {
       "category": "reasoning",
       "prompt": "A farmer has 17 sheep. All but 9 die. How many are left?",
-      "selected_model": "cheap",
-      "selected_cost": 1.0,
-      "premium_cost": 100.0,
-      "savings": 0.99,
+      "selected_model": "gpt5mini",
+      "selected_cost_usd": 1.3e-05,
+      "baseline_cost_usd": 15.0,
+      "savings": 0.9999991333333333,
       "overall_scores": {
-        "cheap": 80,
-        "mid": 90,
-        "premium": 85
+        "gpt5mini": 85,
+        "sonnet": 90,
+        "opus": 95
       },
-      "selector_latency_s": 3.7613458749838173,
-      "reason": "'cheap' is the first model exceeding the threshold of 80 (overall=80, priority=1, cost=1.0).",
+      "selector_latency_s": 3.8854767919983715,
+      "reason": "'gpt5mini' is the first model exceeding the threshold of 80 (overall=85, priority=1, cost=$0.15/1M in, $0.60/1M out).",
       "policy": "cheapest_capable"
     },
     {
       "category": "hard_coding",
       "prompt": "Design a thread-safe LRU cache in Python. Include the eviction policy and concurrency strategy.",
-      "selected_model": "mid",
-      "selected_cost": 20.0,
-      "premium_cost": 100.0,
-      "savings": 0.8,
+      "selected_model": "sonnet",
+      "selected_cost_usd": 0.000324,
+      "baseline_cost_usd": 15.0,
+      "savings": 0.9999783999999999,
       "overall_scores": {
-        "cheap": 65,
-        "mid": 92,
-        "premium": 95
+        "gpt5mini": 55,
+        "sonnet": 90,
+        "opus": 95
       },
-      "selector_latency_s": 3.6964209170546383,
-      "reason": "'mid' is the first model exceeding the threshold of 80 (overall=92, priority=2, cost=20.0).",
+      "selector_latency_s": 3.659707749960944,
+      "reason": "'sonnet' is the first model exceeding the threshold of 80 (overall=90, priority=2, cost=$3.00/1M in, $15.00/1M out).",
       "policy": "cheapest_capable"
     },
     {
       "category": "hard_coding",
       "prompt": "Write a function to merge k sorted linked lists. Explain the time complexity.",
-      "selected_model": "mid",
-      "selected_cost": 20.0,
-      "premium_cost": 100.0,
-      "savings": 0.8,
+      "selected_model": "sonnet",
+      "selected_cost_usd": 0.00027,
+      "baseline_cost_usd": 15.0,
+      "savings": 0.9999819999999999,
       "overall_scores": {
-        "cheap": 65,
-        "mid": 92,
-        "premium": 95
+        "gpt5mini": 65,
+        "sonnet": 92,
+        "opus": 95
       },
-      "selector_latency_s": 3.7690286671277136,
-      "reason": "'mid' is the first model exceeding the threshold of 80 (overall=92, priority=2, cost=20.0).",
+      "selector_latency_s": 3.9347020839340985,
+      "reason": "'sonnet' is the first model exceeding the threshold of 80 (overall=92, priority=2, cost=$3.00/1M in, $15.00/1M out).",
       "policy": "cheapest_capable"
     },
     {
       "category": "hard_coding",
       "prompt": "Design a URL shortener like bit.ly. Cover hashing, collisions, and database schema.",
-      "selected_model": "mid",
-      "selected_cost": 20.0,
-      "premium_cost": 100.0,
-      "savings": 0.8,
+      "selected_model": "sonnet",
+      "selected_cost_usd": 0.000324,
+      "baseline_cost_usd": 15.0,
+      "savings": 0.9999783999999999,
       "overall_scores": {
-        "cheap": 65,
-        "mid": 90,
-        "premium": 85
+        "gpt5mini": 65,
+        "sonnet": 90,
+        "opus": 95
       },
-      "selector_latency_s": 3.706397834001109,
-      "reason": "'mid' is the first model exceeding the threshold of 80 (overall=90, priority=2, cost=20.0).",
+      "selector_latency_s": 4.117324207909405,
+      "reason": "'sonnet' is the first model exceeding the threshold of 80 (overall=90, priority=2, cost=$3.00/1M in, $15.00/1M out).",
       "policy": "cheapest_capable"
     },
     {
       "category": "hard_coding",
       "prompt": "Implement a simple Raft consensus algorithm in pseudocode, covering leader election and log replication.",
-      "selected_model": "mid",
-      "selected_cost": 20.0,
-      "premium_cost": 100.0,
-      "savings": 0.8,
+      "selected_model": "sonnet",
+      "selected_cost_usd": 0.000324,
+      "baseline_cost_usd": 15.0,
+      "savings": 0.9999783999999999,
       "overall_scores": {
-        "cheap": 55,
-        "mid": 90,
-        "premium": 95
+        "gpt5mini": 55,
+        "sonnet": 92,
+        "opus": 98
       },
-      "selector_latency_s": 3.8281866661272943,
-      "reason": "'mid' is the first model exceeding the threshold of 80 (overall=90, priority=2, cost=20.0).",
+      "selector_latency_s": 3.95363058289513,
+      "reason": "'sonnet' is the first model exceeding the threshold of 80 (overall=92, priority=2, cost=$3.00/1M in, $15.00/1M out).",
       "policy": "cheapest_capable"
     },
     {
       "category": "writing",
       "prompt": "Write a polite out-of-office email for next week.",
-      "selected_model": "mid",
-      "selected_cost": 20.0,
-      "premium_cost": 100.0,
-      "savings": 0.8,
+      "selected_model": "sonnet",
+      "selected_cost_usd": 0.000198,
+      "baseline_cost_usd": 15.0,
+      "savings": 0.9999868000000001,
       "overall_scores": {
-        "cheap": 75,
-        "mid": 90,
-        "premium": 85
+        "gpt5mini": 75,
+        "sonnet": 90,
+        "opus": 85
       },
-      "selector_latency_s": 5.315336875151843,
-      "reason": "'mid' is the first model exceeding the threshold of 80 (overall=90, priority=2, cost=20.0).",
+      "selector_latency_s": 4.303858958883211,
+      "reason": "'sonnet' is the first model exceeding the threshold of 80 (overall=90, priority=2, cost=$3.00/1M in, $15.00/1M out).",
       "policy": "cheapest_capable"
     },
     {
       "category": "writing",
       "prompt": "Write a haiku about Python.",
-      "selected_model": "mid",
-      "selected_cost": 20.0,
-      "premium_cost": 100.0,
-      "savings": 0.8,
+      "selected_model": "sonnet",
+      "selected_cost_usd": 0.000126,
+      "baseline_cost_usd": 15.0,
+      "savings": 0.9999916,
       "overall_scores": {
-        "cheap": 70,
-        "mid": 90,
-        "premium": 85
+        "gpt5mini": 65,
+        "sonnet": 85,
+        "opus": 95
       },
-      "selector_latency_s": 4.033609332982451,
-      "reason": "'mid' is the first model exceeding the threshold of 80 (overall=90, priority=2, cost=20.0).",
+      "selector_latency_s": 4.180401125224307,
+      "reason": "'sonnet' is the first model exceeding the threshold of 80 (overall=85, priority=2, cost=$3.00/1M in, $15.00/1M out).",
       "policy": "cheapest_capable"
     }
   ],

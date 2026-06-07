@@ -3,7 +3,7 @@
 Three built-in policies:
   * ``cheapest_capable``  - first model (by priority) whose overall score >= threshold
   * ``highest_confidence``- the model with the highest overall score
-  * ``balanced``          - highest score / cost ratio
+  * ``best_value``        - highest score / cost ratio (renamed from ``balanced``)
 
 Users can subclass ``Policy`` to define custom policies.
 """
@@ -11,7 +11,7 @@ Users can subclass ``Policy`` to define custom policies.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from modeldirector.config import PolicyConfig
 from modeldirector.models import ModelScore, SelectionResult
@@ -29,7 +29,7 @@ class Policy(ABC):
     def apply(
         self,
         scores: dict[str, ModelScore],
-        models: list[ModelProfile],
+        models: list["ModelProfile"],
     ) -> SelectionResult:
         """Return a SelectionResult given the per-model scores and full profile list."""
 
@@ -47,12 +47,12 @@ class CheapestCapablePolicy(Policy):
     def apply(
         self,
         scores: dict[str, ModelScore],
-        models: list[ModelProfile],
+        models: list["ModelProfile"],
     ) -> SelectionResult:
-        # Sort by priority asc, then cost asc.
-        ordered = sorted(models, key=lambda m: (m.priority, m.cost or 0.0))
-        chosen: ModelProfile | None = None
-        chosen_score: ModelScore | None = None
+        # Sort by priority asc, then by input cost asc.
+        ordered = sorted(models, key=lambda m: (m.priority, m.cost.input))
+        chosen: "ModelProfile | None" = None
+        chosen_score: "ModelScore | None" = None
         for m in ordered:
             s = scores.get(m.id)
             if s is None:
@@ -75,7 +75,8 @@ class CheapestCapablePolicy(Policy):
         else:
             reason = (
                 f"'{chosen.id}' is the first model exceeding the threshold of {self.threshold} "
-                f"(overall={chosen_score.overall}, priority={chosen.priority}, cost={chosen.cost})."
+                f"(overall={chosen_score.overall}, priority={chosen.priority}, "
+                f"cost=${chosen.cost.input:.2f}/1M in, ${chosen.cost.output:.2f}/1M out)."
             )
 
         return SelectionResult(
@@ -94,7 +95,7 @@ class HighestConfidencePolicy(Policy):
     def apply(
         self,
         scores: dict[str, ModelScore],
-        models: list[ModelProfile],
+        models: list["ModelProfile"],
     ) -> SelectionResult:
         best_id, best_score = max(scores.items(), key=lambda kv: kv[1].overall)
         return SelectionResult(
@@ -108,55 +109,60 @@ class HighestConfidencePolicy(Policy):
         )
 
 
-class BalancedPolicy(Policy):
-    """Pick the model with the highest (overall / cost) ratio."""
+class BestValuePolicy(Policy):
+    """Pick the model with the highest (overall / cost.input) ratio.
 
-    name = "balanced"
+    Uses `cost.input` (deterministic - the user always pays for input tokens
+    and we know the input length) rather than a blended input+output figure
+    (which would require guessing the output length).
+    """
+
+    name = "best_value"
 
     def apply(
         self,
         scores: dict[str, ModelScore],
-        models: list[ModelProfile],
+        models: list["ModelProfile"],
     ) -> SelectionResult:
         def ratio(model_id: str) -> float:
             s = scores[model_id]
-            cost = _cost_for(models, model_id)
-            if cost <= 0:
+            cost_in = _input_cost_for(models, model_id)
+            if cost_in <= 0:
                 return float(s.overall)  # free model - just use score
-            return s.overall / cost
+            return s.overall / cost_in
 
         best_id = max(scores, key=ratio)
         s = scores[best_id]
-        cost = _cost_for(models, best_id)
+        cost_in = _input_cost_for(models, best_id)
         return SelectionResult(
             selected_model=best_id,
             policy=self.name,  # type: ignore[arg-type]
             scores=scores,
             reason=(
-                f"'{best_id}' has the best confidence/cost ratio "
-                f"({s.overall} / {cost} = {ratio(best_id):.2f})."
+                f"'{best_id}' has the best confidence-per-USD ratio "
+                f"({s.overall} / ${cost_in:.2f}/1M in = {ratio(best_id):.2f})."
             ),
         )
 
 
-# --- helpers ---
+# --- helpers ------------------------------------------------------------------
 
 
-def _profile_by_id(models: list[ModelProfile], model_id: str) -> ModelProfile | None:
+def _profile_by_id(models: list["ModelProfile"], model_id: str) -> "ModelProfile | None":
     for m in models:
         if m.id == model_id:
             return m
     return None
 
 
-def _cost_for(models: list[ModelProfile], model_id: str) -> float:
+def _input_cost_for(models: list["ModelProfile"], model_id: str) -> float:
     p = _profile_by_id(models, model_id)
     if p is None:
         return 0.0
-    return float(p.cost or 0.0)
+    return float(p.cost.input)
 
 
-# --- public factory ---
+# --- public factory -----------------------------------------------------------
 
 
 def build_policy(cfg: PolicyConfig) -> Policy:
@@ -165,14 +171,14 @@ def build_policy(cfg: PolicyConfig) -> Policy:
         return CheapestCapablePolicy(threshold=cfg.threshold)
     if cfg.type == "highest_confidence":
         return HighestConfidencePolicy()
-    if cfg.type == "balanced":
-        return BalancedPolicy()
+    if cfg.type == "best_value":
+        return BestValuePolicy()
     raise ValueError(f"Unknown policy type: {cfg.type!r}")
 
 
 def select_model(
     scores: dict[str, ModelScore],
-    models: list[ModelProfile],
+    models: list["ModelProfile"],
     policy: Policy | PolicyConfig,
 ) -> SelectionResult:
     """Top-level helper: apply a Policy (or PolicyConfig) to a score map."""

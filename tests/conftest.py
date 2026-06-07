@@ -6,6 +6,7 @@ import pytest
 from modeldirector.config import (
     Capabilities,
     Config,
+    Cost,
     ModelProfile,
     PolicyConfig,
     SelectorConfig,
@@ -13,42 +14,49 @@ from modeldirector.config import (
 
 
 @pytest.fixture
-def cheap_mid_premium() -> list[ModelProfile]:
-    """A standard 3-tier candidate set used in many tests."""
+def three_models() -> list[ModelProfile]:
+    """A standard 3-model candidate set used in many tests.
+
+    Ids are model names, not tier labels. The engine treats every profile
+    the same; the configured policy decides.
+    """
     return [
         ModelProfile(
-            id="cheap",
-            name="gpt-5-mini",
+            id="gpt5mini",
+            name="gpt-4o-mini",
             description="OpenAI's small, fast, low-cost model for simple tasks.",
+            strengths=["classification", "short_summarisation", "simple_qa"],
             capabilities=Capabilities(reasoning=70, coding=75, context=70, creativity=65),
             priority=1,
-            cost=1,
+            cost=Cost(input=0.15, output=0.60),
         ),
         ModelProfile(
-            id="mid",
-            name="claude-sonnet",
+            id="sonnet",
+            name="claude-3.5-sonnet",
             description="Anthropic's mid-tier model. Strong at coding and reasoning.",
+            strengths=["coding", "architecture", "refactoring"],
             capabilities=Capabilities(reasoning=90, coding=92, context=92, creativity=85),
             priority=2,
-            cost=5,
+            cost=Cost(input=3.00, output=15.00),
         ),
         ModelProfile(
-            id="premium",
-            name="claude-opus",
+            id="opus",
+            name="claude-opus-4",
             description="Anthropic's flagship. Best reasoning, used for hard tasks.",
+            strengths=["hard_reasoning", "complex_coding", "architecture_design"],
             capabilities=Capabilities(reasoning=99, coding=97, context=99, creativity=95),
             priority=3,
-            cost=20,
+            cost=Cost(input=15.00, output=75.00),
         ),
     ]
 
 
 @pytest.fixture
-def cheap_mid_premium_config(cheap_mid_premium) -> Config:
+def three_model_config(three_models) -> Config:
     return Config(
-        selector=SelectorConfig(provider="openrouter", model="openai/gpt-5-mini"),
+        selector=SelectorConfig(provider="openrouter", model="openai/gpt-4o-mini"),
         policy=PolicyConfig(type="cheapest_capable", threshold=80),
-        models=cheap_mid_premium,
+        models=three_models,
     )
 
 

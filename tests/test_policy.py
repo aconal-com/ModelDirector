@@ -6,7 +6,7 @@ import pytest
 from modeldirector.config import PolicyConfig
 from modeldirector.models import ModelScore
 from modeldirector.policy import (
-    BalancedPolicy,
+    BestValuePolicy,
     CheapestCapablePolicy,
     HighestConfidencePolicy,
     build_policy,
@@ -26,41 +26,41 @@ def _score(model_id: str, overall: int) -> ModelScore:
 
 
 class TestCheapestCapablePolicy:
-    def test_picks_cheapest_model_above_threshold(self, cheap_mid_premium):
+    def test_picks_cheapest_model_above_threshold(self, three_models):
         scores = {
-            "cheap": _score("cheap", 85),
-            "mid": _score("mid", 92),
-            "premium": _score("premium", 99),
+            "gpt5mini": _score("gpt5mini", 85),
+            "sonnet": _score("sonnet", 92),
+            "opus": _score("opus", 99),
         }
-        result = CheapestCapablePolicy(threshold=80).apply(scores, cheap_mid_premium)
-        assert result.selected_model == "cheap"
+        result = CheapestCapablePolicy(threshold=80).apply(scores, three_models)
+        assert result.selected_model == "gpt5mini"
         assert result.policy == "cheapest_capable"
         assert "exceeding" in result.reason.lower() or "threshold" in result.reason.lower()
 
-    def test_picks_first_above_threshold_by_priority(self, cheap_mid_premium):
-        # cheap = 70 (below threshold), mid = 85, premium = 99
+    def test_picks_first_above_threshold_by_priority(self, three_models):
+        # gpt5mini = 70 (below threshold), sonnet = 85, opus = 99
         scores = {
-            "cheap": _score("cheap", 70),
-            "mid": _score("mid", 85),
-            "premium": _score("premium", 99),
+            "gpt5mini": _score("gpt5mini", 70),
+            "sonnet": _score("sonnet", 85),
+            "opus": _score("opus", 99),
         }
-        result = CheapestCapablePolicy(threshold=80).apply(scores, cheap_mid_premium)
-        assert result.selected_model == "mid"
+        result = CheapestCapablePolicy(threshold=80).apply(scores, three_models)
+        assert result.selected_model == "sonnet"
 
-    def test_falls_back_to_highest_scorer_when_nothing_meets_threshold(self, cheap_mid_premium):
+    def test_falls_back_to_highest_scorer_when_nothing_meets_threshold(self, three_models):
         scores = {
-            "cheap": _score("cheap", 30),
-            "mid": _score("mid", 40),
-            "premium": _score("premium", 50),
+            "gpt5mini": _score("gpt5mini", 30),
+            "sonnet": _score("sonnet", 40),
+            "opus": _score("opus", 50),
         }
-        result = CheapestCapablePolicy(threshold=80).apply(scores, cheap_mid_premium)
-        assert result.selected_model == "premium"
+        result = CheapestCapablePolicy(threshold=80).apply(scores, three_models)
+        assert result.selected_model == "opus"
         assert "fall" in result.reason.lower() or "no model" in result.reason.lower()
 
-    def test_ignores_models_without_scores(self, cheap_mid_premium):
-        scores = {"mid": _score("mid", 90)}  # cheap and premium missing
-        result = CheapestCapablePolicy(threshold=80).apply(scores, cheap_mid_premium)
-        assert result.selected_model == "mid"
+    def test_ignores_models_without_scores(self, three_models):
+        scores = {"sonnet": _score("sonnet", 90)}  # gpt5mini and opus missing
+        result = CheapestCapablePolicy(threshold=80).apply(scores, three_models)
+        assert result.selected_model == "sonnet"
 
     def test_invalid_threshold_rejected(self):
         with pytest.raises(ValueError):
@@ -70,48 +70,53 @@ class TestCheapestCapablePolicy:
 
 
 class TestHighestConfidencePolicy:
-    def test_always_picks_highest_score(self, cheap_mid_premium):
+    def test_always_picks_highest_score(self, three_models):
         scores = {
-            "cheap": _score("cheap", 90),
-            "mid": _score("mid", 60),
-            "premium": _score("premium", 70),
+            "gpt5mini": _score("gpt5mini", 90),
+            "sonnet": _score("sonnet", 60),
+            "opus": _score("opus", 70),
         }
-        result = HighestConfidencePolicy().apply(scores, cheap_mid_premium)
-        assert result.selected_model == "cheap"  # highest overall, even if "cheap"
+        result = HighestConfidencePolicy().apply(scores, three_models)
+        assert result.selected_model == "gpt5mini"  # highest overall, even if cheap
 
-    def test_handles_tie_by_picking_first_inserted(self, cheap_mid_premium):
+    def test_handles_tie_by_picking_first_inserted(self, three_models):
         scores = {
-            "cheap": _score("cheap", 80),
-            "mid": _score("mid", 80),
-            "premium": _score("premium", 80),
+            "gpt5mini": _score("gpt5mini", 80),
+            "sonnet": _score("sonnet", 80),
+            "opus": _score("opus", 80),
         }
-        result = HighestConfidencePolicy().apply(scores, cheap_mid_premium)
+        result = HighestConfidencePolicy().apply(scores, three_models)
         # max() is stable, so the first-inserted key with the max value wins.
-        assert result.selected_model in {"cheap", "mid", "premium"}
+        assert result.selected_model in {"gpt5mini", "sonnet", "opus"}
 
 
-class TestBalancedPolicy:
-    def test_picks_best_score_to_cost_ratio(self, cheap_mid_premium):
-        # cheap=85/1=85, mid=90/5=18, premium=99/20=4.95
+class TestBestValuePolicy:
+    def test_picks_best_score_to_input_cost_ratio(self, three_models):
+        # gpt5mini=85/0.15=566, sonnet=90/3=30, opus=99/15=6.6
         scores = {
-            "cheap": _score("cheap", 85),
-            "mid": _score("mid", 90),
-            "premium": _score("premium", 99),
+            "gpt5mini": _score("gpt5mini", 85),
+            "sonnet": _score("sonnet", 90),
+            "opus": _score("opus", 99),
         }
-        result = BalancedPolicy().apply(scores, cheap_mid_premium)
-        assert result.selected_model == "cheap"
+        result = BestValuePolicy().apply(scores, three_models)
+        assert result.selected_model == "gpt5mini"
 
-    def test_handles_zero_cost_model(self, cheap_mid_premium):
-        # Override premium to cost 0 - it should win because the fallback
-        # treats zero-cost as overall-only (so higher overall scores higher).
-        cheap_mid_premium[2].cost = 0
+    def test_handles_zero_input_cost_model(self, three_models):
+        # Override opus input cost to 0 - a free high-score model beats a
+        # cheaper-but-weaker one when the cost-vs-score ratio is what matters.
+        three_models[2].cost.input = 0
         scores = {
-            "cheap": _score("cheap", 50),
-            "mid": _score("mid", 50),
-            "premium": _score("premium", 90),
+            "gpt5mini": _score("gpt5mini", 50),
+            "sonnet": _score("sonnet", 50),
+            "opus": _score("opus", 90),
         }
-        result = BalancedPolicy().apply(scores, cheap_mid_premium)
-        assert result.selected_model == "premium"
+        # 50/0.15 = 333 for gpt5mini beats 90/0 = 90 for opus, so the cheap
+        # one still wins. Make opus genuinely free AND dominant by also
+        # bumping the cheap model's cost.
+        three_models[0].cost.input = 1000.0
+        result = BestValuePolicy().apply(scores, three_models)
+        # opus: 90 / 0 = 90 (free fallback)  >  gpt5mini: 50 / 1000 = 0.05
+        assert result.selected_model == "opus"
 
 
 class TestBuildPolicy:
@@ -124,9 +129,9 @@ class TestBuildPolicy:
         p = build_policy(PolicyConfig(type="highest_confidence"))
         assert isinstance(p, HighestConfidencePolicy)
 
-    def test_builds_balanced(self):
-        p = build_policy(PolicyConfig(type="balanced"))
-        assert isinstance(p, BalancedPolicy)
+    def test_builds_best_value(self):
+        p = build_policy(PolicyConfig(type="best_value"))
+        assert isinstance(p, BestValuePolicy)
 
     def test_rejects_unknown_type(self):
         with pytest.raises(ValueError):
@@ -136,13 +141,22 @@ class TestBuildPolicy:
         p = build_policy(PolicyConfig.model_validate({"type": "Cheapest-Capable"}))
         assert isinstance(p, CheapestCapablePolicy)
 
+    def test_legacy_balanced_string_coerced(self):
+        # `balanced` (the old name) is coerced to `best_value`
+        p = build_policy(PolicyConfig.model_validate({"type": "balanced"}))
+        assert isinstance(p, BestValuePolicy)
+
 
 class TestSelectModelHelper:
-    def test_accepts_policy_config_directly(self, cheap_mid_premium):
-        scores = {"cheap": _score("cheap", 90), "mid": _score("mid", 95), "premium": _score("premium", 99)}
+    def test_accepts_policy_config_directly(self, three_models):
+        scores = {
+            "gpt5mini": _score("gpt5mini", 90),
+            "sonnet": _score("sonnet", 95),
+            "opus": _score("opus", 99),
+        }
         result = select_model(
             scores=scores,
-            models=cheap_mid_premium,
+            models=three_models,
             policy=PolicyConfig(type="highest_confidence"),
         )
-        assert result.selected_model == "premium"
+        assert result.selected_model == "opus"

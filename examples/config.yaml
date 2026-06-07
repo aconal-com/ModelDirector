@@ -1,8 +1,13 @@
 # ModelDirector example config
+#
 # Use with:
 #   modeldirector select -c examples/config.yaml -p "Summarise this article"
 #   modeldirector select -c examples/config.yaml -f path/to/prompt.txt
 #   modeldirector validate -c examples/config.yaml
+#
+# Model ids are model names, not tier labels. The engine does not know what
+# "cheap" or "premium" mean - you name the candidates, declare their real
+# per-1M-token cost, and tag their strengths. The policy decides.
 
 selector:
   provider: openrouter
@@ -15,49 +20,70 @@ policy:
   threshold: 80   # require >= 80% confidence before accepting a model
 
 models:
-  - id: cheap
+  - id: gpt5mini
     name: openai/gpt-4o-mini
     display_name: GPT-4o mini
     description: |
       OpenAI's small, fast, low-cost general-purpose model. Good for simple
       classification, routing, short summarisation, and basic Q&A. Weaker at
       long-horizon reasoning, complex multi-step code generation, and nuanced
-      prose. Cost is ~$0.15 per 1M input tokens.
+      prose.
+    strengths:
+      - classification
+      - routing
+      - short_summarisation
+      - simple_qa
     capabilities:
       reasoning: 65
       coding: 70
       context: 70
       creativity: 60
     priority: 1
-    cost: 1
+    cost:
+      input: 0.15     # USD per 1M input tokens
+      output: 0.60    # USD per 1M output tokens
 
-  - id: mid
+  - id: sonnet
     name: anthropic/claude-3.5-sonnet
     display_name: Claude 3.5 Sonnet
     description: |
       Anthropic's mid-tier model. Strong at coding, instruction following,
       and long-context reasoning. 200k context window. The default workhorse
-      for most agentic tasks. Cost is ~$3 per 1M input tokens.
+      for most agentic tasks.
+    strengths:
+      - coding
+      - architecture
+      - long_context
+      - refactoring
+      - instruction_following
     capabilities:
       reasoning: 88
       coding: 92
       context: 95
       creativity: 85
     priority: 2
-    cost: 20
+    cost:
+      input: 3.00
+      output: 15.00
 
-  - id: premium
-    name: anthropic/claude-sonnet-4
-    display_name: Claude Sonnet 4
+  - id: opus
+    name: anthropic/claude-opus-4
+    display_name: Claude Opus 4
     description: |
       Anthropic's frontier model. Best-in-class reasoning, complex multi-step
       planning, and nuanced code generation. Use only when cheaper models
-      are unlikely to succeed. Cost is ~$3 per 1M input tokens but with
-      substantially higher output quality.
+      are unlikely to succeed.
+    strengths:
+      - hard_reasoning
+      - complex_coding
+      - architecture_design
+      - long_horizon_planning
     capabilities:
       reasoning: 95
       coding: 95
       context: 99
       creativity: 92
     priority: 3
-    cost: 100
+    cost:
+      input: 15.00
+      output: 75.00

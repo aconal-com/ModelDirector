@@ -53,45 +53,49 @@ Every request is evaluated independently.
 
 ModelDirector must never contain hardcoded model assumptions.
 
-Users define their own models.
+Users define their own models. The engine does not know what "cheap" or
+"premium" mean. The model id is just a name; the policy decides.
 
 Examples:
 
 ```yaml
 models:
-  - id: cheap
-    name: gpt-5-mini
-  - id: medium
-    name: claude-sonnet
-  - id: premium
-    name: claude-opus
+  - id: gpt5mini
+    name: openai/gpt-4o-mini
+    cost: { input: 0.15, output: 0.60 }
+  - id: sonnet
+    name: anthropic/claude-3.5-sonnet
+    cost: { input: 3.00, output: 15.00 }
+  - id: opus
+    name: anthropic/claude-opus-4
+    cost: { input: 15.00, output: 75.00 }
 ```
 
 Or:
 
 ```yaml
 models:
-  - id: cheap
-    name: gpt-4o
-  - id: medium
-    name: minimax-m1
-  - id: premium
-    name: minimax-m2
+  - id: local-qwen
+    name: ollama/qwen3-32b
+    cost: { input: 0.0, output: 0.0 }
+  - id: deepseek
+    name: openrouter/deepseek-chat
+    cost: { input: 0.27, output: 1.10 }
+  - id: gemini
+    name: google/gemini-2.5-pro
+    cost: { input: 1.25, output: 5.00 }
 ```
 
 Or:
 
 ```yaml
 models:
-  - id: cheap
-    name: qwen3-32b
-  - id: medium
-    name: deepseek-r1
-  - id: premium
-    name: gemini-2.5-pro
+  - id: my-finetune
+    name: openai/ft:gpt-4o-mini:my-org:custom:abc123
+    cost: { input: 0.30, output: 1.20 }
 ```
 
-ModelDirector should not care.
+ModelDirector should not care. The engine treats every profile uniformly.
 
 ---
 
@@ -251,49 +255,112 @@ Range: `0-100`
 
 ## Model Profile System
 
-Users define model capabilities.
+Users define model capabilities, strengths, and per-1M-token cost.
 
 Example:
 
 ```yaml
 models:
   - id: gpt5mini
-    name: gpt-5-mini
-    display_name: GPT-5 Mini
-    description: OpenAI's small, fast, low-cost general-purpose model. Good for simple classification, routing, and short-form tasks. Weaker at long-horizon reasoning and large code refactors.
+    name: gpt-4o-mini
+    display_name: GPT-4o mini
+    description: |
+      OpenAI's small, fast, low-cost general-purpose model. Good for
+      simple classification, routing, and short-form tasks. Weaker at
+      long-horizon reasoning and large code refactors.
+    strengths:
+      - classification
+      - routing
+      - short_summarisation
+      - simple_qa
     capabilities:
       reasoning: 80
       coding: 85
       context: 80
       creativity: 70
     priority: 1
+    cost:
+      input: 0.15
+      output: 0.60
 
   - id: sonnet
-    name: claude-sonnet
-    display_name: Claude Sonnet
-    description: Anthropic's mid-tier model. Strong at coding, instruction following, and long-context reasoning. 200k context window. Default workhorse for most agentic tasks.
+    name: claude-3.5-sonnet
+    display_name: Claude 3.5 Sonnet
+    description: |
+      Anthropic's mid-tier model. Strong at coding, instruction
+      following, and long-context reasoning. 200k context window. Default
+      workhorse for most agentic tasks.
+    strengths:
+      - coding
+      - architecture
+      - refactoring
+      - long_context
     capabilities:
       reasoning: 90
       coding: 95
       context: 95
       creativity: 85
     priority: 2
+    cost:
+      input: 3.00
+      output: 15.00
 
   - id: opus
-    name: claude-opus
-    display_name: Claude Opus
-    description: Anthropic's flagship model. Best-in-class reasoning, complex multi-step planning, and nuanced code generation. Use only when cheaper models are unlikely to succeed.
+    name: claude-opus-4
+    display_name: Claude Opus 4
+    description: |
+      Anthropic's flagship model. Best-in-class reasoning, complex
+      multi-step planning, and nuanced code generation. Use only when
+      cheaper models are unlikely to succeed.
+    strengths:
+      - hard_reasoning
+      - complex_coding
+      - architecture_design
     capabilities:
       reasoning: 99
       coding: 98
       context: 99
       creativity: 95
     priority: 3
+    cost:
+      input: 15.00
+      output: 75.00
 ```
 
-The `description` field is strongly recommended. Smaller selector models may not have intrinsic knowledge of what "Sonnet", "Opus", "deepseek-r1", or a user's custom model name means. The description gives the selector enough context to score accurately and is always passed into the generated prompt alongside the model name and capability scores.
+The `description` field is strongly recommended. Smaller selector models
+may not have intrinsic knowledge of what "Sonnet", "Opus", "deepseek-r1",
+or a user's custom model name means. The description gives the selector
+enough context to score accurately and is always passed into the
+generated prompt alongside the model name and capability scores.
 
-`description` is optional in the schema, but profiles without one rely on the selector model recognizing the model name on its own.
+`description` is optional in the schema, but profiles without one rely on
+the selector model recognizing the model name on its own.
+
+### Strengths (recommended)
+
+```yaml
+strengths:
+  - coding
+  - architecture
+  - long_context
+```
+
+`strengths` is a structured list of task-type tags the model is good at.
+Small selector models frequently don't know the latest capabilities of
+every model. Tagging strengths explicitly is more reliable than relying
+on the model name being recognised.
+
+### Cost (required)
+
+```yaml
+cost:
+  input: 0.15      # USD per 1M input tokens
+  output: 0.60     # USD per 1M output tokens
+```
+
+A bare number (`cost: 1`) is also accepted for back-compat and is
+treated as `cost: {input: 1, output: 1}`. New configs should always use
+the `{input, output}` form.
 
 Users can create unlimited profiles.
 
@@ -338,7 +405,8 @@ The selector model evaluates the prompt against candidate models.
 ModelDirector dynamically generates a prompt containing:
 
 - user task
-- model profiles (id, name, display name, description, capabilities, priority)
+- model profiles (id, name, display name, description, **strengths**,
+  capabilities, **cost per 1M tokens** in USD, priority)
 - scoring instructions
 
 The selector must return JSON only.
@@ -350,7 +418,7 @@ Example:
   "models": [
     {
       "id": "gpt5mini",
-      "overall_confidence": 87,
+      "overall": 87,
       "reasoning": 82,
       "coding": 91,
       "context": 85,
@@ -368,7 +436,8 @@ Example:
 
 Default.
 
-Select the first model whose confidence exceeds threshold.
+Select the first model (by priority asc, then by input cost asc) whose
+confidence exceeds the configured threshold.
 
 Example:
 
@@ -378,11 +447,11 @@ threshold: 85
 
 Scores:
 
-- GPT-5 Mini = 89
-- Sonnet = 94
-- Opus = 99
+- gpt5mini = 89
+- sonnet = 94
+- opus = 99
 
-Result: **GPT-5 Mini**
+Result: **gpt5mini**
 
 ### Highest Confidence
 
@@ -390,21 +459,24 @@ Select highest score.
 
 Scores:
 
-- GPT-5 Mini = 89
-- Sonnet = 94
-- Opus = 99
+- gpt5mini = 89
+- sonnet = 94
+- opus = 99
 
-Result: **Opus**
+Result: **opus**
 
-### Balanced
+### Best Value
 
-Score: `confidence / cost`
+Score: `confidence / cost.input`
 
-Highest ratio wins.
+Highest ratio wins. Uses `cost.input` (deterministic — the user always
+pays for input tokens and we know the input length) rather than a
+blended input+output figure (which would require guessing the output
+length). Renamed from the legacy `balanced` policy (v0.0.x).
 
 ### User Defined
 
-Users may implement custom policies.
+Users may implement custom policies by subclassing `Policy`.
 
 ---
 
@@ -421,24 +493,38 @@ Users may implement custom policies.
       "overall": 74,
       "reasoning": 70,
       "coding": 82,
-      "context": 71
+      "context": 71,
+      "explanation": "..."
     },
     "sonnet": {
       "overall": 91,
       "reasoning": 90,
       "coding": 95,
-      "context": 93
+      "context": 93,
+      "explanation": "..."
     },
     "opus": {
       "overall": 97,
       "reasoning": 98,
       "coding": 96,
-      "context": 99
+      "context": 99,
+      "explanation": "..."
     }
   },
-  "reason": "Sonnet is the first model exceeding the configured threshold of 85."
+  "estimated_cost_usd": {
+    "gpt5mini": 0.0001,
+    "sonnet":   0.0020,
+    "opus":     0.0100
+  },
+  "input_tokens": 7,
+  "reason": "'sonnet' is the first model exceeding the configured threshold of 85 (overall=91, priority=2, cost=$3.00/1M in, $15.00/1M out)."
 }
 ```
+
+`estimated_cost_usd` is a first-class field: a per-model USD cost
+estimate for the actual prompt, computed from each model's
+per-1M-token cost and a token-count estimate of the input. The
+caller can render this directly to show users the cost trade-off.
 
 ---
 
@@ -506,25 +592,30 @@ Example:
 ```yaml
 selector:
   provider: openai
-  model: gpt-5-mini
+  model: gpt-4o-mini
 
 policy:
   type: cheapest_capable
   threshold: 85
 
 models:
-  - id: cheap
-    name: gpt-5-mini
+  - id: gpt5mini
+    name: openai/gpt-4o-mini
     description: OpenAI's small, fast, low-cost model for simple tasks.
-    cost: 1
-  - id: medium
-    name: sonnet
+    strengths: [classification, routing, simple_qa]
+    cost: { input: 0.15, output: 0.60 }
+
+  - id: sonnet
+    name: anthropic/claude-3.5-sonnet
     description: Anthropic's mid-tier model. Strong at coding and long-context reasoning.
-    cost: 5
-  - id: premium
-    name: opus
+    strengths: [coding, architecture, long_context]
+    cost: { input: 3.00, output: 15.00 }
+
+  - id: opus
+    name: anthropic/claude-opus-4
     description: Anthropic's flagship. Best reasoning, used when cheaper models are unlikely to succeed.
-    cost: 20
+    strengths: [hard_reasoning, complex_coding, architecture_design]
+    cost: { input: 15.00, output: 75.00 }
 ```
 
 ---
@@ -545,21 +636,28 @@ models:
 
 ```
 modeldirector/
-├── modeldirector/
-├── selector/
-├── policies/
-├── adapters/
-│   ├── sdk/
-│   ├── mcp/
-│   ├── rest/
-│   └── cli/
-├── providers/
-├── examples/
-├── tests/
-├── docs/
+├── modeldirector/           # The engine
+│   ├── config.py            # Pydantic config models (Cost, ModelProfile, ...)
+│   ├── loader.py            # YAML / dict loader, ${ENV} expansion
+│   ├── models.py            # Public types: ModelScore, SelectionResult
+│   ├── policy.py            # Policy engine (3 built-ins + custom)
+│   ├── selector.py          # Selector engine + USD cost estimator
+│   └── adapters/            # The interfaces (derived from the engine)
+│       ├── cli.py
+│       ├── rest.py
+│       └── mcp.py
+├── benchmarks/              # 30-task real-LLM benchmark
+├── examples/                # ready-to-use config
+├── tests/                   # 43 unit + 4 integration tests
+├── docs/                    # hero image
+├── prd.md
 ├── pyproject.toml
 └── README.md
 ```
+
+The engine is the product. The adapters are derived. Adding a new
+interface is a matter of constructing a `ModelDirector` and translating
+the input/output to the adapter's protocol.
 
 ---
 
