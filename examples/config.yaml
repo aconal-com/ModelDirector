@@ -1,0 +1,63 @@
+# ModelDirector example config
+# Use with:
+#   modeldirector select -c examples/config.yaml -p "Summarise this article"
+#   modeldirector select -c examples/config.yaml -f path/to/prompt.txt
+#   modeldirector validate -c examples/config.yaml
+
+selector:
+  provider: openrouter
+  model: anthropic/claude-3.5-haiku
+  # api_key is read from $OPENROUTER_API_KEY by default.
+  temperature: 0.0
+
+policy:
+  type: cheapest_capable
+  threshold: 80   # require >= 80% confidence before accepting a model
+
+models:
+  - id: cheap
+    name: openai/gpt-4o-mini
+    display_name: GPT-4o mini
+    description: |
+      OpenAI's small, fast, low-cost general-purpose model. Good for simple
+      classification, routing, short summarisation, and basic Q&A. Weaker at
+      long-horizon reasoning, complex multi-step code generation, and nuanced
+      prose. Cost is ~$0.15 per 1M input tokens.
+    capabilities:
+      reasoning: 65
+      coding: 70
+      context: 70
+      creativity: 60
+    priority: 1
+    cost: 1
+
+  - id: mid
+    name: anthropic/claude-3.5-sonnet
+    display_name: Claude 3.5 Sonnet
+    description: |
+      Anthropic's mid-tier model. Strong at coding, instruction following,
+      and long-context reasoning. 200k context window. The default workhorse
+      for most agentic tasks. Cost is ~$3 per 1M input tokens.
+    capabilities:
+      reasoning: 88
+      coding: 92
+      context: 95
+      creativity: 85
+    priority: 2
+    cost: 20
+
+  - id: premium
+    name: anthropic/claude-sonnet-4
+    display_name: Claude Sonnet 4
+    description: |
+      Anthropic's frontier model. Best-in-class reasoning, complex multi-step
+      planning, and nuanced code generation. Use only when cheaper models
+      are unlikely to succeed. Cost is ~$3 per 1M input tokens but with
+      substantially higher output quality.
+    capabilities:
+      reasoning: 95
+      coding: 95
+      context: 99
+      creativity: 92
+    priority: 3
+    cost: 100

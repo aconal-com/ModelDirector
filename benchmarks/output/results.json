@@ -1,0 +1,490 @@
+{
+  "timestamp": "2026-06-07T01:24:55+00:00",
+  "config_path": "/Users/aconal/Documents/github/ModelDirector/examples/config.yaml",
+  "selector_model": "openrouter/anthropic/claude-3.5-haiku",
+  "baseline_model": "premium",
+  "baseline_cost": 100.0,
+  "tasks": [
+    {
+      "category": "trivial",
+      "prompt": "Translate the word 'hello' to French.",
+      "selected_model": "cheap",
+      "selected_cost": 1.0,
+      "premium_cost": 100.0,
+      "savings": 0.99,
+      "overall_scores": {
+        "cheap": 90,
+        "mid": 95,
+        "premium": 85
+      },
+      "selector_latency_s": 3.984342041891068,
+      "reason": "'cheap' is the first model exceeding the threshold of 80 (overall=90, priority=1, cost=1.0).",
+      "policy": "cheapest_capable"
+    },
+    {
+      "category": "trivial",
+      "prompt": "What is 2 + 2?",
+      "selected_model": "cheap",
+      "selected_cost": 1.0,
+      "premium_cost": 100.0,
+      "savings": 0.99,
+      "overall_scores": {
+        "cheap": 95,
+        "mid": 98,
+        "premium": 96
+      },
+      "selector_latency_s": 4.0298398330342025,
+      "reason": "'cheap' is the first model exceeding the threshold of 80 (overall=95, priority=1, cost=1.0).",
+      "policy": "cheapest_capable"
+    },
+    {
+      "category": "trivial",
+      "prompt": "Sort this list: [3, 1, 4, 1, 5, 9, 2, 6]",
+      "selected_model": "mid",
+      "selected_cost": 20.0,
+      "premium_cost": 100.0,
+      "savings": 0.8,
+      "overall_scores": {
+        "cheap": 75,
+        "mid": 90,
+        "premium": 85
+      },
+      "selector_latency_s": 3.9015048327855766,
+      "reason": "'mid' is the first model exceeding the threshold of 80 (overall=90, priority=2, cost=20.0).",
+      "policy": "cheapest_capable"
+    },
+    {
+      "category": "trivial",
+      "prompt": "Convert 'cat' to uppercase.",
+      "selected_model": "cheap",
+      "selected_cost": 1.0,
+      "premium_cost": 100.0,
+      "savings": 0.99,
+      "overall_scores": {
+        "cheap": 95,
+        "mid": 98,
+        "premium": 90
+      },
+      "selector_latency_s": 4.589951874921098,
+      "reason": "'cheap' is the first model exceeding the threshold of 80 (overall=95, priority=1, cost=1.0).",
+      "policy": "cheapest_capable"
+    },
+    {
+      "category": "trivial",
+      "prompt": "What's the capital of Japan?",
+      "selected_model": "cheap",
+      "selected_cost": 1.0,
+      "premium_cost": 100.0,
+      "savings": 0.99,
+      "overall_scores": {
+        "cheap": 90,
+        "mid": 95,
+        "premium": 85
+      },
+      "selector_latency_s": 3.774135832907632,
+      "reason": "'cheap' is the first model exceeding the threshold of 80 (overall=90, priority=1, cost=1.0).",
+      "policy": "cheapest_capable"
+    },
+    {
+      "category": "simple_qa",
+      "prompt": "List three primary colours.",
+      "selected_model": "cheap",
+      "selected_cost": 1.0,
+      "premium_cost": 100.0,
+      "savings": 0.99,
+      "overall_scores": {
+        "cheap": 90,
+        "mid": 85,
+        "premium": 70
+      },
+      "selector_latency_s": 4.076124457875267,
+      "reason": "'cheap' is the first model exceeding the threshold of 80 (overall=90, priority=1, cost=1.0).",
+      "policy": "cheapest_capable"
+    },
+    {
+      "category": "simple_qa",
+      "prompt": "Name a programming language created by Guido van Rossum.",
+      "selected_model": "cheap",
+      "selected_cost": 1.0,
+      "premium_cost": 100.0,
+      "savings": 0.99,
+      "overall_scores": {
+        "cheap": 80,
+        "mid": 95,
+        "premium": 98
+      },
+      "selector_latency_s": 4.342026375001296,
+      "reason": "'cheap' is the first model exceeding the threshold of 80 (overall=80, priority=1, cost=1.0).",
+      "policy": "cheapest_capable"
+    },
+    {
+      "category": "simple_qa",
+      "prompt": "Who wrote 'Pride and Prejudice'?",
+      "selected_model": "cheap",
+      "selected_cost": 1.0,
+      "premium_cost": 100.0,
+      "savings": 0.99,
+      "overall_scores": {
+        "cheap": 85,
+        "mid": 95,
+        "premium": 90
+      },
+      "selector_latency_s": 3.7043412080965936,
+      "reason": "'cheap' is the first model exceeding the threshold of 80 (overall=85, priority=1, cost=1.0).",
+      "policy": "cheapest_capable"
+    },
+    {
+      "category": "simple_qa",
+      "prompt": "What HTTP status code means 'Not Found'?",
+      "selected_model": "cheap",
+      "selected_cost": 1.0,
+      "premium_cost": 100.0,
+      "savings": 0.99,
+      "overall_scores": {
+        "cheap": 85,
+        "mid": 95,
+        "premium": 90
+      },
+      "selector_latency_s": 3.966657957993448,
+      "reason": "'cheap' is the first model exceeding the threshold of 80 (overall=85, priority=1, cost=1.0).",
+      "policy": "cheapest_capable"
+    },
+    {
+      "category": "simple_qa",
+      "prompt": "Define the term 'API' in one sentence.",
+      "selected_model": "cheap",
+      "selected_cost": 1.0,
+      "premium_cost": 100.0,
+      "savings": 0.99,
+      "overall_scores": {
+        "cheap": 85,
+        "mid": 90,
+        "premium": 75
+      },
+      "selector_latency_s": 4.455064750043675,
+      "reason": "'cheap' is the first model exceeding the threshold of 80 (overall=85, priority=1, cost=1.0).",
+      "policy": "cheapest_capable"
+    },
+    {
+      "category": "summarisation",
+      "prompt": "Summarise this in one sentence: The quick brown fox jumps over the lazy dog. The dog barks. The fox runs away.",
+      "selected_model": "cheap",
+      "selected_cost": 1.0,
+      "premium_cost": 100.0,
+      "savings": 0.99,
+      "overall_scores": {
+        "cheap": 85,
+        "mid": 90,
+        "premium": 75
+      },
+      "selector_latency_s": 4.163468499900773,
+      "reason": "'cheap' is the first model exceeding the threshold of 80 (overall=85, priority=1, cost=1.0).",
+      "policy": "cheapest_capable"
+    },
+    {
+      "category": "summarisation",
+      "prompt": "TLDR this commit message: 'Fix off-by-one error in pagination cursor when offset equals total count.'",
+      "selected_model": "mid",
+      "selected_cost": 20.0,
+      "premium_cost": 100.0,
+      "savings": 0.8,
+      "overall_scores": {
+        "cheap": 75,
+        "mid": 90,
+        "premium": 85
+      },
+      "selector_latency_s": 3.7421022090129554,
+      "reason": "'mid' is the first model exceeding the threshold of 80 (overall=90, priority=2, cost=20.0).",
+      "policy": "cheapest_capable"
+    },
+    {
+      "category": "summarisation",
+      "prompt": "Summarise: 'Paris is the capital of France. It has the Eiffel Tower. It is in Europe.'",
+      "selected_model": "mid",
+      "selected_cost": 20.0,
+      "premium_cost": 100.0,
+      "savings": 0.8,
+      "overall_scores": {
+        "cheap": 75,
+        "mid": 85,
+        "premium": 65
+      },
+      "selector_latency_s": 3.9691187501884997,
+      "reason": "'mid' is the first model exceeding the threshold of 80 (overall=85, priority=2, cost=20.0).",
+      "policy": "cheapest_capable"
+    },
+    {
+      "category": "light_coding",
+      "prompt": "Write a Python function that returns the length of a string.",
+      "selected_model": "cheap",
+      "selected_cost": 1.0,
+      "premium_cost": 100.0,
+      "savings": 0.99,
+      "overall_scores": {
+        "cheap": 85,
+        "mid": 95,
+        "premium": 90
+      },
+      "selector_latency_s": 3.817835916997865,
+      "reason": "'cheap' is the first model exceeding the threshold of 80 (overall=85, priority=1, cost=1.0).",
+      "policy": "cheapest_capable"
+    },
+    {
+      "category": "light_coding",
+      "prompt": "Write a regex that matches valid email addresses.",
+      "selected_model": "mid",
+      "selected_cost": 20.0,
+      "premium_cost": 100.0,
+      "savings": 0.8,
+      "overall_scores": {
+        "cheap": 75,
+        "mid": 92,
+        "premium": 85
+      },
+      "selector_latency_s": 4.379969415953383,
+      "reason": "'mid' is the first model exceeding the threshold of 80 (overall=92, priority=2, cost=20.0).",
+      "policy": "cheapest_capable"
+    },
+    {
+      "category": "light_coding",
+      "prompt": "Fix the bug: `def add(a, b): return a - b`",
+      "selected_model": "mid",
+      "selected_cost": 20.0,
+      "premium_cost": 100.0,
+      "savings": 0.8,
+      "overall_scores": {
+        "cheap": 75,
+        "mid": 95,
+        "premium": 85
+      },
+      "selector_latency_s": 4.264072458026931,
+      "reason": "'mid' is the first model exceeding the threshold of 80 (overall=95, priority=2, cost=20.0).",
+      "policy": "cheapest_capable"
+    },
+    {
+      "category": "light_coding",
+      "prompt": "Write a one-liner to flatten a list of lists in Python.",
+      "selected_model": "mid",
+      "selected_cost": 20.0,
+      "premium_cost": 100.0,
+      "savings": 0.8,
+      "overall_scores": {
+        "cheap": 75,
+        "mid": 90,
+        "premium": 85
+      },
+      "selector_latency_s": 6.966185916215181,
+      "reason": "'mid' is the first model exceeding the threshold of 80 (overall=90, priority=2, cost=20.0).",
+      "policy": "cheapest_capable"
+    },
+    {
+      "category": "medium_coding",
+      "prompt": "Write a Python class for a Stack with push, pop, and is_empty methods.",
+      "selected_model": "mid",
+      "selected_cost": 20.0,
+      "premium_cost": 100.0,
+      "savings": 0.8,
+      "overall_scores": {
+        "cheap": 75,
+        "mid": 95,
+        "premium": 90
+      },
+      "selector_latency_s": 4.537827666150406,
+      "reason": "'mid' is the first model exceeding the threshold of 80 (overall=95, priority=2, cost=20.0).",
+      "policy": "cheapest_capable"
+    },
+    {
+      "category": "medium_coding",
+      "prompt": "Implement binary search in Python with O(log n) time complexity.",
+      "selected_model": "mid",
+      "selected_cost": 20.0,
+      "premium_cost": 100.0,
+      "savings": 0.8,
+      "overall_scores": {
+        "cheap": 75,
+        "mid": 92,
+        "premium": 90
+      },
+      "selector_latency_s": 3.8553200839087367,
+      "reason": "'mid' is the first model exceeding the threshold of 80 (overall=92, priority=2, cost=20.0).",
+      "policy": "cheapest_capable"
+    },
+    {
+      "category": "medium_coding",
+      "prompt": "Write a SQL query to find the second-highest salary from an Employee table.",
+      "selected_model": "mid",
+      "selected_cost": 20.0,
+      "premium_cost": 100.0,
+      "savings": 0.8,
+      "overall_scores": {
+        "cheap": 75,
+        "mid": 92,
+        "premium": 85
+      },
+      "selector_latency_s": 4.199291083030403,
+      "reason": "'mid' is the first model exceeding the threshold of 80 (overall=92, priority=2, cost=20.0).",
+      "policy": "cheapest_capable"
+    },
+    {
+      "category": "medium_coding",
+      "prompt": "Write a function to debounce API calls in JavaScript.",
+      "selected_model": "mid",
+      "selected_cost": 20.0,
+      "premium_cost": 100.0,
+      "savings": 0.8,
+      "overall_scores": {
+        "cheap": 75,
+        "mid": 92,
+        "premium": 85
+      },
+      "selector_latency_s": 4.157248541945592,
+      "reason": "'mid' is the first model exceeding the threshold of 80 (overall=92, priority=2, cost=20.0).",
+      "policy": "cheapest_capable"
+    },
+    {
+      "category": "reasoning",
+      "prompt": "If a train leaves at 9am going 60 mph and another at 10am going 80 mph in the same direction, when does the second catch up?",
+      "selected_model": "mid",
+      "selected_cost": 20.0,
+      "premium_cost": 100.0,
+      "savings": 0.8,
+      "overall_scores": {
+        "cheap": 70,
+        "mid": 90,
+        "premium": 85
+      },
+      "selector_latency_s": 4.1347410418093204,
+      "reason": "'mid' is the first model exceeding the threshold of 80 (overall=90, priority=2, cost=20.0).",
+      "policy": "cheapest_capable"
+    },
+    {
+      "category": "reasoning",
+      "prompt": "Explain the difference between TCP and UDP in two paragraphs.",
+      "selected_model": "mid",
+      "selected_cost": 20.0,
+      "premium_cost": 100.0,
+      "savings": 0.8,
+      "overall_scores": {
+        "cheap": 75,
+        "mid": 90,
+        "premium": 85
+      },
+      "selector_latency_s": 6.126095833955333,
+      "reason": "'mid' is the first model exceeding the threshold of 80 (overall=90, priority=2, cost=20.0).",
+      "policy": "cheapest_capable"
+    },
+    {
+      "category": "reasoning",
+      "prompt": "A farmer has 17 sheep. All but 9 die. How many are left?",
+      "selected_model": "cheap",
+      "selected_cost": 1.0,
+      "premium_cost": 100.0,
+      "savings": 0.99,
+      "overall_scores": {
+        "cheap": 80,
+        "mid": 90,
+        "premium": 85
+      },
+      "selector_latency_s": 3.7613458749838173,
+      "reason": "'cheap' is the first model exceeding the threshold of 80 (overall=80, priority=1, cost=1.0).",
+      "policy": "cheapest_capable"
+    },
+    {
+      "category": "hard_coding",
+      "prompt": "Design a thread-safe LRU cache in Python. Include the eviction policy and concurrency strategy.",
+      "selected_model": "mid",
+      "selected_cost": 20.0,
+      "premium_cost": 100.0,
+      "savings": 0.8,
+      "overall_scores": {
+        "cheap": 65,
+        "mid": 92,
+        "premium": 95
+      },
+      "selector_latency_s": 3.6964209170546383,
+      "reason": "'mid' is the first model exceeding the threshold of 80 (overall=92, priority=2, cost=20.0).",
+      "policy": "cheapest_capable"
+    },
+    {
+      "category": "hard_coding",
+      "prompt": "Write a function to merge k sorted linked lists. Explain the time complexity.",
+      "selected_model": "mid",
+      "selected_cost": 20.0,
+      "premium_cost": 100.0,
+      "savings": 0.8,
+      "overall_scores": {
+        "cheap": 65,
+        "mid": 92,
+        "premium": 95
+      },
+      "selector_latency_s": 3.7690286671277136,
+      "reason": "'mid' is the first model exceeding the threshold of 80 (overall=92, priority=2, cost=20.0).",
+      "policy": "cheapest_capable"
+    },
+    {
+      "category": "hard_coding",
+      "prompt": "Design a URL shortener like bit.ly. Cover hashing, collisions, and database schema.",
+      "selected_model": "mid",
+      "selected_cost": 20.0,
+      "premium_cost": 100.0,
+      "savings": 0.8,
+      "overall_scores": {
+        "cheap": 65,
+        "mid": 90,
+        "premium": 85
+      },
+      "selector_latency_s": 3.706397834001109,
+      "reason": "'mid' is the first model exceeding the threshold of 80 (overall=90, priority=2, cost=20.0).",
+      "policy": "cheapest_capable"
+    },
+    {
+      "category": "hard_coding",
+      "prompt": "Implement a simple Raft consensus algorithm in pseudocode, covering leader election and log replication.",
+      "selected_model": "mid",
+      "selected_cost": 20.0,
+      "premium_cost": 100.0,
+      "savings": 0.8,
+      "overall_scores": {
+        "cheap": 55,
+        "mid": 90,
+        "premium": 95
+      },
+      "selector_latency_s": 3.8281866661272943,
+      "reason": "'mid' is the first model exceeding the threshold of 80 (overall=90, priority=2, cost=20.0).",
+      "policy": "cheapest_capable"
+    },
+    {
+      "category": "writing",
+      "prompt": "Write a polite out-of-office email for next week.",
+      "selected_model": "mid",
+      "selected_cost": 20.0,
+      "premium_cost": 100.0,
+      "savings": 0.8,
+      "overall_scores": {
+        "cheap": 75,
+        "mid": 90,
+        "premium": 85
+      },
+      "selector_latency_s": 5.315336875151843,
+      "reason": "'mid' is the first model exceeding the threshold of 80 (overall=90, priority=2, cost=20.0).",
+      "policy": "cheapest_capable"
+    },
+    {
+      "category": "writing",
+      "prompt": "Write a haiku about Python.",
+      "selected_model": "mid",
+      "selected_cost": 20.0,
+      "premium_cost": 100.0,
+      "savings": 0.8,
+      "overall_scores": {
+        "cheap": 70,
+        "mid": 90,
+        "premium": 85
+      },
+      "selector_latency_s": 4.033609332982451,
+      "reason": "'mid' is the first model exceeding the threshold of 80 (overall=90, priority=2, cost=20.0).",
+      "policy": "cheapest_capable"
+    }
+  ],
+  "errors": []
+}
