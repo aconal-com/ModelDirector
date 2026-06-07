@@ -215,31 +215,7 @@ uv sync --all-extras
 
 ## How it works
 
-```
-your prompt
-     │
-     ▼
-┌──────────────────────────────┐
-│        ModelDirector         │
-│                              │
-│  1. Selector LLM scores      │
-│     every candidate model    │
-│     (0-100 overall + per-    │
-│     axis: reasoning, coding, │
-│     context, creativity)     │
-│                              │
-│  2. Engine estimates the     │
-│     USD cost of each pick    │
-│     for the actual prompt.   │
-│                              │
-│  3. Policy engine picks      │
-│     the winner using a       │
-│     deterministic rule.      │
-└──────────────────────────────┘
-     │
-     ▼
-{ selected_model, scores, estimated_cost_usd, reason }
-```
+![How it works](docs/how-it-works.jpg)
 
 The selector is a small, fast LLM (e.g. `claude-3.5-haiku`, `gpt-4o-mini`,
 `qwen3-32b`) that gets a structured JSON prompt with your task, every
@@ -427,7 +403,8 @@ modeldirector/
 │   └── config.yaml          # ready-to-use config
 ├── tests/                   # 43 unit + 4 integration tests
 ├── docs/
-│   └── hero.jpg             # README hero
+│   ├── hero.jpg             # README hero (top)
+│   └── how-it-works.jpg     # "How it works" section diagram
 ├── prd.md
 ├── pyproject.toml
 └── README.md
