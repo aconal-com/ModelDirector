@@ -258,7 +258,9 @@ Example:
 ```yaml
 models:
   - id: gpt5mini
+    name: gpt-5-mini
     display_name: GPT-5 Mini
+    description: OpenAI's small, fast, low-cost general-purpose model. Good for simple classification, routing, and short-form tasks. Weaker at long-horizon reasoning and large code refactors.
     capabilities:
       reasoning: 80
       coding: 85
@@ -267,7 +269,9 @@ models:
     priority: 1
 
   - id: sonnet
+    name: claude-sonnet
     display_name: Claude Sonnet
+    description: Anthropic's mid-tier model. Strong at coding, instruction following, and long-context reasoning. 200k context window. Default workhorse for most agentic tasks.
     capabilities:
       reasoning: 90
       coding: 95
@@ -276,7 +280,9 @@ models:
     priority: 2
 
   - id: opus
+    name: claude-opus
     display_name: Claude Opus
+    description: Anthropic's flagship model. Best-in-class reasoning, complex multi-step planning, and nuanced code generation. Use only when cheaper models are unlikely to succeed.
     capabilities:
       reasoning: 99
       coding: 98
@@ -284,6 +290,10 @@ models:
       creativity: 95
     priority: 3
 ```
+
+The `description` field is strongly recommended. Smaller selector models may not have intrinsic knowledge of what "Sonnet", "Opus", "deepseek-r1", or a user's custom model name means. The description gives the selector enough context to score accurately and is always passed into the generated prompt alongside the model name and capability scores.
+
+`description` is optional in the schema, but profiles without one rely on the selector model recognizing the model name on its own.
 
 Users can create unlimited profiles.
 
@@ -328,8 +338,7 @@ The selector model evaluates the prompt against candidate models.
 ModelDirector dynamically generates a prompt containing:
 
 - user task
-- model profiles
-- capability descriptions
+- model profiles (id, name, display name, description, capabilities, priority)
 - scoring instructions
 
 The selector must return JSON only.
@@ -506,12 +515,15 @@ policy:
 models:
   - id: cheap
     name: gpt-5-mini
+    description: OpenAI's small, fast, low-cost model for simple tasks.
     cost: 1
   - id: medium
     name: sonnet
+    description: Anthropic's mid-tier model. Strong at coding and long-context reasoning.
     cost: 5
   - id: premium
     name: opus
+    description: Anthropic's flagship. Best reasoning, used when cheaper models are unlikely to succeed.
     cost: 20
 ```
 
