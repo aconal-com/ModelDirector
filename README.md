@@ -1,6 +1,6 @@
 # ModelDirector
 
-![Hero](docs/hero.svg)
+![Hero](docs/hero.jpg)
 
 **Open-source, stateless AI model selection engine.**
 
@@ -427,7 +427,7 @@ modeldirector/
 │   └── config.yaml          # ready-to-use config
 ├── tests/                   # 43 unit + 4 integration tests
 ├── docs/
-│   └── hero.svg             # README hero
+│   └── hero.jpg             # README hero
 ├── prd.md
 ├── pyproject.toml
 └── README.md
