@@ -92,6 +92,9 @@ pip install "modeldirector[rest]"
 # With MCP adapter (for Claude Desktop, Continue, etc.)
 pip install "modeldirector[mcp]"
 
+# With the Laya decision engine backend (cheap, self-hosted selector)
+pip install "modeldirector[laya]"
+
 # Everything
 pip install "modeldirector[all]"
 ```
@@ -103,6 +106,13 @@ git clone https://github.com/aniketkarne-com/ModelDirector
 cd ModelDirector
 uv sync --all-extras
 ```
+
+> **Two selector backends ship today:** `llm` (default — a configured LLM
+> scores every candidate) and `laya` (the Laya decision engine — a
+> non-autoregressive System-1 model that scores every candidate in a
+> single forward pass, ~33 ms on GPU, $0/call). See
+> [`docs/laya.md`](docs/laya.md) for the trade-offs and
+> `examples/config-laya.yaml` for a working config.
 
 ---
 
@@ -239,14 +249,30 @@ Custom policies subclass `Policy` and override `apply(scores, models)`.
 
 ### `selector`
 
-| Field        | Required | Default | Notes                                                   |
-| ------------ | -------- | ------- | ------------------------------------------------------- |
-| `provider`   | yes      | —       | LiteLLM provider, e.g. `openrouter`, `openai`, `ollama`|
-| `model`      | yes      | —       | Model name (LiteLLM format)                             |
-| `api_key`    | no       | env     | Falls back to `${PROVIDER}_API_KEY`                     |
-| `api_base`   | no       | —       | Override the API base URL                                |
-| `temperature`| no       | `0.0`   | Sampling temperature                                    |
-| `max_tokens` | no       | —       | Cap on the selector's response                          |
+The selector is whatever ModelDirector asks "which of these candidate
+models should handle this prompt?" Two backends ship today:
+
+* **`llm`** (default) — asks a configurable LLM via LiteLLM. Slower
+  (~0.5-3 s), costs per-token, returns per-axis scores
+  (`reasoning` / `coding` / `context` / `creativity`).
+* **`laya`** — the [Laya decision engine](docs/laya.md), a
+  non-autoregressive System-1 model. Single forward pass (~33 ms on
+  GPU), $0 per call after the initial checkpoint download. Returns a
+  single calibrated probability per candidate, which becomes the
+  `overall` score.
+
+| Field         | Required | Default                        | Notes |
+| ------------- | -------- | ------------------------------ | ----- |
+| `backend`     | no       | `"llm"`                        | `"llm"` or `"laya"`. See above. |
+| `provider`    | llm      | `openrouter`                   | LiteLLM provider, e.g. `openrouter`, `openai`, `ollama`. Ignored when `backend: laya`. |
+| `model`       | llm      | —                              | Model name (LiteLLM format). Ignored when `backend: laya`. |
+| `api_key`     | no       | env (`${PROVIDER}_API_KEY`)    | Falls back to the provider's env var. Ignored when `backend: laya`. |
+| `api_base`    | no       | —                              | Override the API base URL. Ignored when `backend: laya`. |
+| `temperature` | no       | `0.0`                          | Sampling temperature. |
+| `max_tokens`  | no       | —                              | Cap on the selector's response. |
+| `laya_model`  | no       | `convaiinnovations/laya`       | Laya checkpoint id. Use `multilingual` for 100+ languages and longer context. Ignored when `backend: llm`. |
+| `laya_device` | no       | auto                           | `"cpu"`, `"cuda"`, `"mps"`. Ignored when `backend: llm`. |
+| `laya_max_len`| no       | —                              | Override the per-call token budget for the Laya forward pass. |
 
 ### `policy`
 
